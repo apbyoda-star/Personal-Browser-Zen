@@ -174,8 +174,13 @@
 }
 
 /* Magnifier launcher: only in icon mode */
-:root[zen-sidebar-expanded="true"] #vector-search-button {
+:root[zen-sidebar-expanded="true"] #vector-collapsed-tools {
   display: none;
+}
+#vector-collapsed-tools {
+  justify-content: center;
+  align-items: center;
+  padding-block: 6px 2px;
 }
 #vector-search-button {
   list-style-image: url("chrome://global/skin/icons/search-glass.svg");

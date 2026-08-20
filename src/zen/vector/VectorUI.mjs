@@ -13,33 +13,31 @@ var gVectorSidebarSnap = {
   _lastGoodWidth: null,
 
   _addSearchButton() {
-    // Magnifier in the collapsed sidebar: opens the floating urlbar overlay
-    // (same as Cmd+L). Hidden while the sidebar is expanded (CSS).
-    if (document.getElementById("vector-search-button")) {
+    // Magnifier shown only in the icon-only sidebar: opens the floating urlbar
+    // overlay (same as Cmd+L). It gets its OWN container prepended to the
+    // sidebar root: anything inside #zen-sidebar-top-buttons is relocated into
+    // #nav-bar whenever the sidebar collapses (ZenUIManager "navBar.prepend
+    // (topButtons)") - and we hide #nav-bar in icon mode, so a button there
+    // can never be visible exactly when we need it.
+    if (document.getElementById("vector-collapsed-tools")) {
       return;
     }
-    const target = document.getElementById(
-      "zen-sidebar-top-buttons-customization-target"
-    );
-    if (!target) {
+    const toolbox = document.getElementById("navigator-toolbox");
+    if (!toolbox) {
       requestAnimationFrame(() => this._addSearchButton());
       return;
     }
+    const box = document.createXULElement("hbox");
+    box.id = "vector-collapsed-tools";
     const btn = document.createXULElement("toolbarbutton");
     btn.id = "vector-search-button";
-    // NOT chromeclass-toolbar-additional: ZenUIManager's single-toolbar EXIT
-    // path sweeps every such child of this target into #nav-bar (which is
-    // hidden in icon mode) the moment the sidebar collapses. skipintoolbarset
-    // keeps CustomizableUI's hands off it too, like Zen's own separator.
     btn.className = "toolbarbutton-1";
-    btn.setAttribute("skipintoolbarset", "true");
-    btn.setAttribute("removable", "false");
-    btn.setAttribute("overflows", "false");
     btn.setAttribute("tooltiptext", "Search or enter address");
     btn.addEventListener("command", () => {
       document.getElementById("Browser:OpenLocation")?.doCommand();
     });
-    target.appendChild(btn);
+    box.appendChild(btn);
+    toolbox.prepend(box);
   },
 
   init() {
