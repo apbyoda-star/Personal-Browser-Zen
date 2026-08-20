@@ -142,8 +142,117 @@ var gVectorSidebarSnap = {
     });
   },
 
+  // ── Windows: hover-reveal window-control pill ────────────────────────────
+  // Ported from Vector (renderer/components/WindowControls.tsx). On Windows the
+  // min/max/close buttons live inside #nav-bar, which icon mode hides — that
+  // would leave no way to close the window, and simply keeping the bar would
+  // surrender the vertical height that is the whole point of icon mode.
+  // Vector's answer: no bar at all, an invisible drag strip along the top edge,
+  // and a pill that slides down when the cursor reaches the top-right corner.
+  // We reuse Firefox's OWN .titlebar-buttonbox-container rather than drawing
+  // buttons, so the glyphs, the maximize/restore swap and the red close hover
+  // all stay native.
+  _winctl: null,
+  _winctlHomeParent: null,
+
+  _winctlEnabled() {
+    // The force pref exists so this can be exercised on macOS during
+    // development; on Windows it is on by definition.
+    return (
+      window.AppConstants?.platform === "win" ||
+      Services.prefs.getBoolPref("vector.winctl.force", false)
+    );
+  },
+
+  _addWindowControls() {
+    if (!this._winctlEnabled() || this._winctl) {
+      return;
+    }
+    const host = document.getElementById("browser");
+    if (!host) {
+      requestAnimationFrame(() => this._addWindowControls());
+      return;
+    }
+    const make = (id) => {
+      const el = document.createXULElement("hbox");
+      el.id = id;
+      host.appendChild(el);
+      return el;
+    };
+    // Invisible strip along the very top edge so the window can still be moved
+    // and double-clicked to maximize with no visible titlebar.
+    make("vector-winctl-drag");
+    const hot = make("vector-winctl-hot");
+    const pill = make("vector-winctl");
+    this._winctl = pill;
+
+    const show = () => document.documentElement.setAttribute("vector-winctl-shown", "true");
+    const hide = () => document.documentElement.removeAttribute("vector-winctl-shown");
+    const ZONE_W = 200;
+    const ZONE_H = 46;
+    hot.addEventListener("mouseenter", show);
+    pill.addEventListener("mouseenter", show);
+    // Leaving the corner collapses it, even if the pill was never touched.
+    window.addEventListener("mousemove", (e) => {
+      if (!document.documentElement.hasAttribute("vector-winctl-shown")) {
+        return;
+      }
+      if (e.clientY > ZONE_H || e.clientX < window.innerWidth - ZONE_W) {
+        hide();
+      }
+    });
+
+    // If Zen's toolbar rebuild reclaims the buttonbox, take it back.
+    new MutationObserver(() => this._syncWindowControls()).observe(pill, {
+      childList: true,
+    });
+    Services.prefs.addObserver("zen.view.sidebar-expanded", () =>
+      setTimeout(() => this._syncWindowControls(), 60)
+    );
+    // Mark forced runs so the preview stylesheet can un-hide the caption
+    // buttons that macOS platform CSS hides (it uses the native traffic
+    // lights). Real Windows runs never get this attribute.
+    if (window.AppConstants?.platform !== "win") {
+      document.documentElement.setAttribute("vector-winctl-preview", "true");
+    }
+    this._syncWindowControls();
+  },
+
+  _syncWindowControls() {
+    if (!this._winctl) {
+      return;
+    }
+    const buttons =
+      document.querySelector("#nav-bar .titlebar-buttonbox-container") ||
+      document.querySelector(".titlebar-buttonbox-container");
+    if (!buttons) {
+      return;
+    }
+    const collapsed = !Services.prefs.getBoolPref(
+      "zen.view.sidebar-expanded",
+      true
+    );
+    if (collapsed) {
+      if (buttons.parentNode !== this._winctl) {
+        if (!this._winctlHomeParent) {
+          this._winctlHomeParent = buttons.parentNode;
+        }
+        this._winctl.appendChild(buttons);
+      }
+      document.documentElement.setAttribute("vector-winctl", "true");
+    } else {
+      // Expanded: the top bar is visible again, so give the buttons back.
+      if (buttons.parentNode === this._winctl && this._winctlHomeParent) {
+        this._winctlHomeParent.appendChild(buttons);
+      }
+      document.documentElement.removeAttribute("vector-winctl");
+      document.documentElement.removeAttribute("vector-winctl-shown");
+    }
+  },
+
   init() {
     this._addSearchButton();
+    this._addWindowControls();
     this._watchUrlbar();
     const splitter = document.getElementById("zen-sidebar-splitter");
     const toolbox = document.getElementById("navigator-toolbox");

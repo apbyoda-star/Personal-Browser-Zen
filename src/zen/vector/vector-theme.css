@@ -157,20 +157,8 @@
    while the overlay is open — the :has() exception keeps it in the tree then,
    but collapsed to nothing: the [open] urlbar is position:fixed and paints
    centered on its own. */
-/* WINDOWS GUARD: on Windows the minimize/maximize/close buttons are appended
-   into #nav-bar when the sidebar is collapsed (ZenUIManager: the
-   !isSingleToolbar && !isCompactMode branch, isWindowsStyledButtons=true), and
-   #nav-bar lives inside this wrapper. Hiding it there would leave a Windows
-   user with NO way to close the window. macOS is unaffected: it uses the
-   native traffic lights, which are not in this wrapper.
-   TODO(windows): relocate the caption buttons into the collapsed icon strip
-   (Vector's original Windows design used a hover-reveal pill at top right),
-   then drop this guard so Windows gets the full-height page too.
-   Verify on real hardware before removing — see WINDOWS_BUILD.md. */
-@media not (-moz-platform: windows) {
-  :root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:not(:has(#urlbar[open])) {
-    display: none;
-  }
+:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:not(:has(#urlbar[open])) {
+  display: none;
 }
 :root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:has(#urlbar[open]) {
   position: fixed;
@@ -201,12 +189,10 @@
 }
 /* Zen pushes the collapsed sidebar down 42px to clear the top toolbar;
    we removed that toolbar in icon mode, so reclaim the space.
-   Windows still shows that toolbar (see the caption-button guard above), so
-   the margin must stay there or the icon strip would overlap it. */
-@media not (-moz-platform: windows) {
-  :root:not([zen-sidebar-expanded="true"]) #navigator-toolbox#navigator-toolbox#navigator-toolbox {
-    margin-top: 0 !important;
-  }
+   On Windows the caption buttons move into the hover-reveal pill below, so
+   this holds there too. */
+:root:not([zen-sidebar-expanded="true"]) #navigator-toolbox#navigator-toolbox#navigator-toolbox {
+  margin-top: 0 !important;
 }
 #vector-search-button {
   list-style-image: url("chrome://global/skin/icons/search-glass.svg");
@@ -219,4 +205,76 @@
   content: "Search or enter address";
   opacity: 0.45;
   font-size: 12px;
+}
+
+/* ── Windows window-control pill (VectorUI.mjs) ───────────────────────────
+   Icon mode hides the top bar, which on Windows is where the min/max/close
+   buttons live. Ported from Vector: an invisible drag strip along the top edge
+   keeps the window movable, and the buttons ride in a pill that slides down
+   when the cursor reaches the top-right corner. Only present when Vector put
+   the buttons there ([vector-winctl]), so macOS is untouched. */
+#vector-winctl-drag,
+#vector-winctl-hot,
+#vector-winctl {
+  display: none;
+}
+:root[vector-winctl="true"] #vector-winctl-drag {
+  display: block;
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 6px;
+  z-index: 59;
+  -moz-window-dragging: drag;
+}
+:root[vector-winctl="true"] #vector-winctl-hot {
+  display: block;
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 200px;
+  height: 6px;
+  z-index: 60;
+  -moz-window-dragging: no-drag;
+}
+:root[vector-winctl="true"] #vector-winctl {
+  display: flex;
+  position: fixed;
+  top: 0;
+  right: 10px;
+  z-index: 61;
+  align-items: center;
+  padding: 3px 4px 5px;
+  background: light-dark(#f2f3f6, #16171d);
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.1));
+  border-top: 0;
+  border-radius: 0 0 11px 11px;
+  box-shadow: var(--vector-e-2);
+  translate: 0 -110%;
+  opacity: 0;
+  pointer-events: none;
+  transition: translate 0.18s ease, opacity 0.18s ease;
+  -moz-window-dragging: no-drag;
+}
+:root[vector-winctl="true"][vector-winctl-shown="true"] #vector-winctl {
+  translate: 0 0;
+  opacity: 1;
+  pointer-events: auto;
+}
+/* The relocated buttonbox must not inherit the hidden toolbar's sizing. */
+:root[vector-winctl="true"] #vector-winctl .titlebar-buttonbox-container {
+  display: flex !important;
+  visibility: visible !important;
+  height: auto !important;
+}
+
+/* Preview only (macOS dev runs with vector.winctl.force): macOS hides the
+   Windows-style caption buttons, so un-hide them to check the pill's layout.
+   .titlebar-restore stays hidden because Firefox swaps max/restore by display
+   according to sizemode - forcing both visible would show two buttons. */
+:root[vector-winctl-preview="true"] #vector-winctl .titlebar-button:not(.titlebar-restore) {
+  display: flex !important;
+  min-width: 34px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
 }

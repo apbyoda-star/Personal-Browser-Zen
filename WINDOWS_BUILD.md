@@ -142,8 +142,8 @@ if it is not present) has the fuller checklist; these are the essentials:
    Vector's V icon. No Zen name, spiral logo, fox mascot, or flame icon anywhere.
 2. **Window controls** — Windows uses its own minimize/maximize/close buttons.
    The pref `zen.view.hide-window-controls` is deliberately **false** on Windows
-   (true on macOS). If the controls are missing, that pref regressed and the user
-   would have no way to close the window.
+   (true on macOS). With the sidebar EXPANDED they sit in the top bar as usual;
+   in icon mode they move into the hover-reveal pill described in item 6.
 3. **Fonts** — Windows should render in Segoe UI, not Inter. Driven by a
    `-moz-platform: windows` media query in `src/zen/vector/vector-theme.css`.
 4. **Little Arc (the flagship feature)** — a page-initiated `window.open` must
@@ -158,10 +158,30 @@ if it is not present) has the fuller checklist; these are the essentials:
    dragging back out expands it. In icon mode there is no top URL bar at all;
    a magnifier icon at the top of the icon strip opens a centered floating
    search.
-6. **Bitwarden** — auto-installs from `distribution/extensions/` on **first run
+6. **The window-control pill — HIGHEST-RISK ITEM ON WINDOWS, TEST FIRST.**
+   Icon mode hides the top bar, and on Windows that bar is where Firefox keeps
+   minimize/maximize/close. Vector's original solution was ported here: the
+   caption buttons are moved into a pill that stays tucked above the top edge
+   and slides down when the cursor reaches the **top-right corner**, plus an
+   invisible 6px drag strip along the top edge so the window can still be
+   moved. Verify, in icon mode:
+   - moving the cursor to the top-right reveals the pill, and minimize,
+     maximize/restore and close all work;
+   - the pill retreats when the cursor leaves that corner;
+   - dragging the very top edge moves the window;
+   - expanding the sidebar returns the buttons to the normal top bar.
+   This was written from Vector's implementation and verified on macOS only as
+   far as macOS allows — the plumbing (buttons relocated, pill reveals, page
+   gains the full height) is confirmed, but macOS hides Windows-style caption
+   buttons in its platform CSS, so **their appearance has never been seen**.
+   **If the pill fails, you are not locked in**: Alt+F4 closes the window,
+   Alt+Space opens the system menu, and the menu bar still has File > Close.
+   Expanding the sidebar also brings the normal buttons straight back.
+   To preview the pill on macOS, set `vector.winctl.force` to true and restart.
+7. **Bitwarden** — auto-installs from `distribution/extensions/` on **first run
    of a fresh profile only**. If it is missing, the profile was created before
    the extension was in place; make a new profile rather than debugging it.
-7. **Updates must stay silent.** No "update available" prompts, and absolutely no
+8. **Updates must stay silent.** No "update available" prompts, and absolutely no
    prompt offering real Zen Browser. If one appears, that is a serious
    regression — capture a screenshot and report it.
 
