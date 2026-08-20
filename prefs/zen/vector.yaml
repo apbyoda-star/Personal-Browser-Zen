@@ -104,3 +104,9 @@
 - name: zen.view.hide-window-controls
   value: false
   condition: "defined(XP_WIN)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Little Arc (Phase 4) — master toggle for the page-initiated floating panel.
+# ─────────────────────────────────────────────────────────────────────────────
+- name: vector.little-arc.enabled
+  value: true

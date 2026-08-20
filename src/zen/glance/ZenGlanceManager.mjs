@@ -1545,18 +1545,42 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
    * @param {nsIURI} uri - The URI to check
    * @returns {boolean} True if should open in glance
    */
-  shouldOpenTabInGlance(tab, uri) {
-    const owner = tab.owner;
+  // Vector "Little Arc": page-initiated window.open should open in a floating
+  // panel, except when the opener is a search engine (first hop of a search =>
+  // a normal tab). Ported from Vector's shipped SEARCH_HOSTS (src/main/index.ts);
+  // the rule uses only the OPENER's host, never the target URL.
+  static get VECTOR_SEARCH_HOSTS() {
+    return [
+      "google.", "bing.com", "duckduckgo.com", "search.yahoo.",
+      "search.brave.com", "ecosia.org", "startpage.com", "baidu.com",
+    ];
+  }
 
-    return (
-      owner &&
-      owner.pinned &&
-      !owner.hasAttribute("glance-id") &&
-      this._lazyPref.SHOULD_OPEN_EXTERNAL_TABS_IN_GLANCE &&
-      owner.linkedBrowser?.browsingContext?.isAppTab &&
-      this.tabDomainsDiffer(owner, uri) &&
-      Services.prefs.getBoolPref("zen.glance.enabled", true)
-    );
+  #vectorIsSearchSource(tab) {
+    try {
+      const host = tab.linkedBrowser.currentURI.host.toLowerCase();
+      return nsZenGlanceManager.VECTOR_SEARCH_HOSTS.some((h) => host.includes(h));
+    } catch {
+      return false;
+    }
+  }
+
+  shouldOpenTabInGlance(tab, uri) {
+    if (!Services.prefs.getBoolPref("zen.glance.enabled", true)) return false;
+    if (!Services.prefs.getBoolPref("vector.little-arc.enabled", true)) return false;
+
+    const owner = tab.owner;
+    if (!owner) return false; // no opener => nothing to preserve, let it be a tab
+    if (owner.hasAttribute("glance-id")) return false; // don't nest panels; fall back to a tab
+    if (!this.#isValidGlanceUrl(uri.spec)) return false; // http/https/file only
+
+    // First hop of a search => normal tab.
+    if (this.#vectorIsSearchSource(owner)) return false;
+
+    // Everything else from a content page => floating panel.
+    // Deliberately NOT gated on owner.pinned / isAppTab / cross-domain: Tekmetric
+    // punch-outs come from ordinary tabs and are often same-domain.
+    return true;
   }
 
   /**
@@ -1586,12 +1610,18 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
    * @param {Tab} tab - The tab to open glance for
    */
   #openGlanceForTab(tab) {
+    // Little Arc has no originating click, so synthesise a centered origin.
+    // Zero width/height skips the snapshot branch; the open animation still runs.
+    const win = tab.ownerGlobal;
     this.openGlance(
       {
-        url: undefined,
-        // No need for triggeringPrincipal here
+        url: undefined, // no navigation: the browser already exists (adopt path)
+        clientX: Math.round((win?.innerWidth || 1200) / 2),
+        clientY: Math.round((win?.innerHeight || 800) / 2),
+        width: 0,
+        height: 0,
       },
-      tab,
+      tab,       // existingTab => ADOPT the browser Gecko already built (preserves opener)
       tab.owner
     );
   }
