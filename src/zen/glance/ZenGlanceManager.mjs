@@ -312,6 +312,24 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     if (!this.browserWrapper || this.#vectorGrips.length) {
       return;
     }
+    // Center the panel on the WINDOW, not the content area. The panel's
+    // positioning context is the content container (right of the sidebar), so
+    // "centered" skews toward the page side; shift by half the sidebar width
+    // (owner: "I want it centered on the display, not the Chrome instance").
+    try {
+      const toolbox = document.getElementById("navigator-toolbox");
+      const sbW = toolbox ? toolbox.getBoundingClientRect().width : 0;
+      if (sbW > 0) {
+        const rightSide = Services.prefs.getBoolPref(
+          "zen.tabs.vertical.right-side",
+          false
+        );
+        const shift = ((rightSide ? 1 : -1) * sbW) / 2;
+        // `translate` is independent of `transform`, so Zen's open/close
+        // animations (which animate transform) are unaffected.
+        this.browserWrapper.style.translate = `${Math.round(shift)}px 0`;
+      }
+    } catch {}
     // Apply the remembered width (host first, then the explicit default).
     const widths = this.#vectorWidths();
     const saved = widths[this.#vectorHost()] ?? widths["*"];
@@ -399,6 +417,7 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
       this.#vectorEscListener = null;
     }
     this.browserWrapper?.style.removeProperty("width");
+    this.browserWrapper?.style.removeProperty("translate");
   }
 
   /**

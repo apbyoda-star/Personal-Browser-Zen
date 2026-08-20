@@ -40,10 +40,16 @@ var gVectorSidebarSnap = {
           true
         );
         if (isExpanded) {
-          // Live snap, like Vector: crossing the threshold collapses
-          // immediately rather than waiting for mouseup.
+          // Live snap, like Vector. The toolbox has a CSS min-width, so the
+          // splitter HARD-STOPS there and the width never reaches VECTOR_SNAP —
+          // detect the pointer dragging PAST the stopped splitter instead
+          // (owner-reported: "hits a hard stop and never collapses").
           const w = toolbox.getBoundingClientRect().width;
-          if (w < VECTOR_SNAP) {
+          const sRect = splitter.getBoundingClientRect();
+          const inwardPast = rightSide
+            ? ev.clientX - sRect.right
+            : sRect.left - ev.clientX;
+          if (w < VECTOR_SNAP || inwardPast > 30) {
             // Restore the pre-drag width first so re-expanding isn't tiny.
             if (this._lastGoodWidth) {
               toolbox.style.width = this._lastGoodWidth + "px";
