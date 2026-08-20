@@ -1257,13 +1257,33 @@ Preferences.addSetting({
 });
 
 // Vector: "Theme colors…" opens Zen's per-Space gradient picker from Settings.
-// The picker lives in the browser window, so reach it via the top chrome window.
-{
+// The picker lives in the BROWSER window, so reach it via topChromeWindow.
+// NOTE: cmd doCommand() is NOT usable here — the command handler calls
+// openThemePicker(event) which dereferences event.explicitOriginalTarget and
+// throws when no event exists. Call the picker directly with a real synthetic
+// event instead.
+function vectorWireThemeButton() {
   const btn = document.getElementById("vectorOpenThemePicker");
-  if (btn) {
-    btn.addEventListener("click", () => {
-      const win = window.browsingContext.topChromeWindow;
-      win.document.getElementById("cmd_zenOpenZenThemePicker")?.doCommand();
-    });
+  if (!btn || btn.__vectorWired) {
+    return;
   }
+  btn.__vectorWired = true;
+  btn.addEventListener("click", () => {
+    try {
+      const win = window.browsingContext.topChromeWindow;
+      const picker = win.gZenThemePicker;
+      if (picker) {
+        picker.openThemePicker(new win.MouseEvent("click"));
+      }
+    } catch (e) {
+      console.error("vectorOpenThemePicker:", e);
+    }
+  });
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", vectorWireThemeButton, {
+    once: true,
+  });
+} else {
+  vectorWireThemeButton();
 }
