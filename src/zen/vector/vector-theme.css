@@ -148,3 +148,41 @@
   display: flex !important;
   cursor: ew-resize;
 }
+
+
+/* ── Vector: icon-only sidebar => mini top-left URL bar ─────────────────────
+   When the sidebar collapses, Zen exits single-toolbar mode and parks the
+   nav bar in a FULL-WIDTH top strip. Owner wants a compact pill in the
+   top-left instead; with zen.urlbar.behavior=float, clicking it expands the
+   centered floating overlay, so the mini bar only needs to be a launcher. */
+:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper {
+  width: fit-content;
+  max-width: 340px;
+  margin: 4px 0 4px 8px;
+  border-radius: var(--vector-r-lg);
+  background: var(--vector-surface-2);
+  box-shadow: var(--vector-e-1);
+  overflow: hidden;
+}
+:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper #nav-bar {
+  min-width: 0;
+}
+:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper #urlbar-container {
+  min-width: 160px;
+  max-width: 220px;
+}
+/* The floating overlay (urlbar[open]) is fixed-positioned and escapes the
+   pill; nothing here may clip it. overflow:hidden above only affects the
+   closed pill row. */
+:root:not([zen-sidebar-expanded="true"]) #urlbar[zen-floating-urlbar="true"][open] {
+  overflow: visible;
+}
+
+/* ── Vector: never show a dead-empty URL pill ───────────────────────────────
+   On a blank/new tab the domain-only label is empty and the pill reads as
+   broken. Show a quiet placeholder instead. */
+#urlbar-label-box:empty::before {
+  content: "Search or enter address";
+  opacity: 0.45;
+  font-size: 12px;
+}
