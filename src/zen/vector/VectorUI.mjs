@@ -12,7 +12,31 @@ const VECTOR_FULL_MIN = 150; // drag wider than this while collapsed => expand
 var gVectorSidebarSnap = {
   _lastGoodWidth: null,
 
+  _addSearchButton() {
+    // Magnifier in the collapsed sidebar: opens the floating urlbar overlay
+    // (same as Cmd+L). Hidden while the sidebar is expanded (CSS).
+    if (document.getElementById("vector-search-button")) {
+      return;
+    }
+    const target = document.getElementById(
+      "zen-sidebar-top-buttons-customization-target"
+    );
+    if (!target) {
+      requestAnimationFrame(() => this._addSearchButton());
+      return;
+    }
+    const btn = document.createXULElement("toolbarbutton");
+    btn.id = "vector-search-button";
+    btn.className = "toolbarbutton-1 chromeclass-toolbar-additional";
+    btn.setAttribute("tooltiptext", "Search or enter address");
+    btn.addEventListener("command", () => {
+      document.getElementById("Browser:OpenLocation")?.doCommand();
+    });
+    target.appendChild(btn);
+  },
+
   init() {
+    this._addSearchButton();
     const splitter = document.getElementById("zen-sidebar-splitter");
     const toolbox = document.getElementById("navigator-toolbox");
     if (!splitter || !toolbox) {

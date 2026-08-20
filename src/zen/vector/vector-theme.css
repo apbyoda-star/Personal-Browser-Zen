@@ -150,32 +150,35 @@
 }
 
 
-/* ── Vector: icon-only sidebar => mini top-left URL bar ─────────────────────
-   When the sidebar collapses, Zen exits single-toolbar mode and parks the
-   nav bar in a FULL-WIDTH top strip. Owner wants a compact pill in the
-   top-left instead; with zen.urlbar.behavior=float, clicking it expands the
-   centered floating overlay, so the mini bar only needs to be a launcher. */
-:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper {
-  width: fit-content;
-  max-width: 340px;
-  margin: 4px 0 4px 8px;
-  border-radius: var(--vector-r-lg);
-  background: var(--vector-surface-2);
-  box-shadow: var(--vector-e-1);
-  overflow: hidden;
+/* ── Vector: icon-only sidebar => NO top bar at all ─────────────────────────
+   Owner: content gets the full vertical space; a magnifier button in the
+   collapsed sidebar (VectorUI.mjs) opens the floating urlbar overlay.
+   The urlbar element LIVES inside this wrapper, so it cannot be display:none
+   while the overlay is open — the :has() exception keeps it in the tree then,
+   but collapsed to nothing: the [open] urlbar is position:fixed and paints
+   centered on its own. */
+:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:not(:has(#urlbar[open])) {
+  display: none;
 }
-:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper #nav-bar {
-  min-width: 0;
-}
-:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper #urlbar-container {
-  min-width: 160px;
-  max-width: 220px;
-}
-/* The floating overlay (urlbar[open]) is fixed-positioned and escapes the
-   pill; nothing here may clip it. overflow:hidden above only affects the
-   closed pill row. */
-:root:not([zen-sidebar-expanded="true"]) #urlbar[zen-floating-urlbar="true"][open] {
+:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:has(#urlbar[open]) {
+  position: fixed;
+  inset: 0 auto auto 0;
+  width: 0;
+  height: 0;
+  min-height: 0;
   overflow: visible;
+  z-index: 100;
+}
+:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:has(#urlbar[open]) #nav-bar > :not(#urlbar-container) {
+  visibility: hidden;
+}
+
+/* Magnifier launcher: only in icon mode */
+:root[zen-sidebar-expanded="true"] #vector-search-button {
+  display: none;
+}
+#vector-search-button {
+  list-style-image: url("chrome://global/skin/icons/search-glass.svg");
 }
 
 /* ── Vector: never show a dead-empty URL pill ───────────────────────────────
