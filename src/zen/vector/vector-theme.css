@@ -157,8 +157,20 @@
    while the overlay is open — the :has() exception keeps it in the tree then,
    but collapsed to nothing: the [open] urlbar is position:fixed and paints
    centered on its own. */
-:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:not(:has(#urlbar[open])) {
-  display: none;
+/* WINDOWS GUARD: on Windows the minimize/maximize/close buttons are appended
+   into #nav-bar when the sidebar is collapsed (ZenUIManager: the
+   !isSingleToolbar && !isCompactMode branch, isWindowsStyledButtons=true), and
+   #nav-bar lives inside this wrapper. Hiding it there would leave a Windows
+   user with NO way to close the window. macOS is unaffected: it uses the
+   native traffic lights, which are not in this wrapper.
+   TODO(windows): relocate the caption buttons into the collapsed icon strip
+   (Vector's original Windows design used a hover-reveal pill at top right),
+   then drop this guard so Windows gets the full-height page too.
+   Verify on real hardware before removing — see WINDOWS_BUILD.md. */
+@media not (-moz-platform: windows) {
+  :root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:not(:has(#urlbar[open])) {
+    display: none;
+  }
 }
 :root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:has(#urlbar[open]) {
   position: fixed;
@@ -188,9 +200,13 @@
   padding-block: 10px 4px;
 }
 /* Zen pushes the collapsed sidebar down 42px to clear the top toolbar;
-   we removed that toolbar in icon mode, so reclaim the space. */
-:root:not([zen-sidebar-expanded="true"]) #navigator-toolbox#navigator-toolbox#navigator-toolbox {
-  margin-top: 0 !important;
+   we removed that toolbar in icon mode, so reclaim the space.
+   Windows still shows that toolbar (see the caption-button guard above), so
+   the margin must stay there or the icon strip would overlap it. */
+@media not (-moz-platform: windows) {
+  :root:not([zen-sidebar-expanded="true"]) #navigator-toolbox#navigator-toolbox#navigator-toolbox {
+    margin-top: 0 !important;
+  }
 }
 #vector-search-button {
   list-style-image: url("chrome://global/skin/icons/search-glass.svg");
