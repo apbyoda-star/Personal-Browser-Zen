@@ -50,51 +50,41 @@ var gVectorSidebarSnap = {
       return;
     }
     splitter.addEventListener("mousedown", (downEvent) => {
-      const expanded = Services.prefs.getBoolPref(
-        "zen.view.sidebar-expanded",
-        true
-      );
-      const startW = toolbox.getBoundingClientRect().width;
-      const startX = downEvent.clientX;
-      if (expanded && startW >= VECTOR_FULL_MIN) {
-        this._lastGoodWidth = startW;
-      }
       const rightSide = Services.prefs.getBoolPref(
         "zen.tabs.vertical.right-side",
         false
       );
+      if (
+        Services.prefs.getBoolPref("zen.view.sidebar-expanded", true) &&
+        toolbox.getBoundingClientRect().width >= VECTOR_FULL_MIN
+      ) {
+        this._lastGoodWidth = toolbox.getBoundingClientRect().width;
+      }
+      // Both thresholds are judged on ONE value: the pointer's distance from
+      // the sidebar's window edge. Collapse below VECTOR_SNAP, expand above
+      // VECTOR_FULL_MIN, do nothing in between (hysteresis). Judging collapse
+      // against the splitter and expand against the drag start point - the
+      // old scheme - made each rule undo the other once per mouse event in
+      // that gap, which the owner saw as the sidebar strobing.
       const onMove = (ev) => {
-        const isExpanded = Services.prefs.getBoolPref(
+        const dist = rightSide ? window.innerWidth - ev.clientX : ev.clientX;
+        const expanded = Services.prefs.getBoolPref(
           "zen.view.sidebar-expanded",
           true
         );
-        if (isExpanded) {
-          // Live snap, like Vector. The toolbox has a CSS min-width, so the
-          // splitter HARD-STOPS there and the width never reaches VECTOR_SNAP —
-          // detect the pointer dragging PAST the stopped splitter instead
-          // (owner-reported: "hits a hard stop and never collapses").
-          const w = toolbox.getBoundingClientRect().width;
-          const sRect = splitter.getBoundingClientRect();
-          const inwardPast = rightSide
-            ? ev.clientX - sRect.right
-            : sRect.left - ev.clientX;
-          if (w < VECTOR_SNAP || inwardPast > 30) {
-            // Restore the pre-drag width first so re-expanding isn't tiny.
-            if (this._lastGoodWidth) {
-              toolbox.style.width = this._lastGoodWidth + "px";
-              toolbox.setAttribute("width", this._lastGoodWidth + "px");
-            }
-            Services.prefs.setBoolPref("zen.view.sidebar-expanded", false);
+        if (expanded && dist < VECTOR_SNAP) {
+          // Restore the pre-drag width first so re-expanding isn't tiny.
+          if (this._lastGoodWidth) {
+            toolbox.style.width = this._lastGoodWidth + "px";
+            toolbox.setAttribute("width", this._lastGoodWidth + "px");
           }
-        } else {
-          // Collapsed: CSS clamps the toolbox width, so rect-based detection
-          // can never fire. Use the mouse travel instead: dragging outward
-          // (right for a left sidebar) by 40px expands.
-          const dx = ev.clientX - startX;
-          const outward = rightSide ? -dx : dx;
-          if (outward > 40) {
-            Services.prefs.setBoolPref("zen.view.sidebar-expanded", true);
-          }
+          Services.prefs.setBoolPref("zen.view.sidebar-expanded", false);
+        } else if (!expanded && dist > VECTOR_FULL_MIN) {
+          // Hand off at the cursor's width so the edge follows the pointer.
+          const w = Math.round(dist) + "px";
+          toolbox.style.width = w;
+          toolbox.setAttribute("width", w);
+          Services.prefs.setBoolPref("zen.view.sidebar-expanded", true);
         }
       };
       const onUp = () => {

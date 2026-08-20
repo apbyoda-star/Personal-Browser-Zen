@@ -185,7 +185,12 @@
 #vector-collapsed-tools {
   justify-content: center;
   align-items: center;
-  padding-block: 6px 2px;
+  padding-block: 10px 4px;
+}
+/* Zen pushes the collapsed sidebar down 42px to clear the top toolbar;
+   we removed that toolbar in icon mode, so reclaim the space. */
+:root:not([zen-sidebar-expanded="true"]) #navigator-toolbox {
+  margin-top: 0 !important;
 }
 #vector-search-button {
   list-style-image: url("chrome://global/skin/icons/search-glass.svg");
