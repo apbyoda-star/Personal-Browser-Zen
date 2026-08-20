@@ -137,3 +137,14 @@
   --zen-toolbar-element-bg: var(--vector-surface-2);
   --zen-toolbar-element-bg-hover: var(--vector-surface-3);
 }
+
+
+/* ── Vector: sidebar drag-to-expand ──────────────────────────────────────────
+   Zen hides the splitter entirely when the sidebar is collapsed
+   (vertical-tabs.css :root:not([zen-sidebar-expanded]) → display:none), which
+   makes drag-to-expand impossible. Keep it grabbable; VectorUI.mjs turns a
+   rightward drag into an expand. */
+:root:not([zen-sidebar-expanded="true"]) #zen-sidebar-splitter {
+  display: flex !important;
+  cursor: ew-resize;
+}

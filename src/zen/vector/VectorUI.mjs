@@ -20,32 +20,46 @@ var gVectorSidebarSnap = {
       requestAnimationFrame(() => this.init());
       return;
     }
-    splitter.addEventListener("mousedown", () => {
+    splitter.addEventListener("mousedown", (downEvent) => {
       const expanded = Services.prefs.getBoolPref(
         "zen.view.sidebar-expanded",
         true
       );
       const startW = toolbox.getBoundingClientRect().width;
+      const startX = downEvent.clientX;
       if (expanded && startW >= VECTOR_FULL_MIN) {
         this._lastGoodWidth = startW;
       }
-      const onMove = () => {
-        const w = toolbox.getBoundingClientRect().width;
+      const rightSide = Services.prefs.getBoolPref(
+        "zen.tabs.vertical.right-side",
+        false
+      );
+      const onMove = (ev) => {
         const isExpanded = Services.prefs.getBoolPref(
           "zen.view.sidebar-expanded",
           true
         );
-        // Live snap, like Vector: crossing the threshold flips the state
-        // immediately rather than waiting for mouseup.
-        if (isExpanded && w < VECTOR_SNAP) {
-          // Restore the pre-drag width first so re-expanding later isn't tiny.
-          if (this._lastGoodWidth) {
-            toolbox.style.width = this._lastGoodWidth + "px";
-            toolbox.setAttribute("width", this._lastGoodWidth + "px");
+        if (isExpanded) {
+          // Live snap, like Vector: crossing the threshold collapses
+          // immediately rather than waiting for mouseup.
+          const w = toolbox.getBoundingClientRect().width;
+          if (w < VECTOR_SNAP) {
+            // Restore the pre-drag width first so re-expanding isn't tiny.
+            if (this._lastGoodWidth) {
+              toolbox.style.width = this._lastGoodWidth + "px";
+              toolbox.setAttribute("width", this._lastGoodWidth + "px");
+            }
+            Services.prefs.setBoolPref("zen.view.sidebar-expanded", false);
           }
-          Services.prefs.setBoolPref("zen.view.sidebar-expanded", false);
-        } else if (!isExpanded && w > VECTOR_FULL_MIN) {
-          Services.prefs.setBoolPref("zen.view.sidebar-expanded", true);
+        } else {
+          // Collapsed: CSS clamps the toolbox width, so rect-based detection
+          // can never fire. Use the mouse travel instead: dragging outward
+          // (right for a left sidebar) by 40px expands.
+          const dx = ev.clientX - startX;
+          const outward = rightSide ? -dx : dx;
+          if (outward > 40) {
+            Services.prefs.setBoolPref("zen.view.sidebar-expanded", true);
+          }
         }
       };
       const onUp = () => {
