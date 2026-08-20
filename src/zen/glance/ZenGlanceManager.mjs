@@ -585,6 +585,10 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
 
     this.fillOverlay(browserElement);
     this.overlay.classList.add("zen-glance-overlay");
+    // Vector: set the remembered width BEFORE the open animation measures its
+    // reference size, so the panel animates in at its final width instead of
+    // opening narrow and popping wider afterwards.
+    this.#vectorApplyStoredWidth();
 
     return this.#animateGlanceOpening(data, browserElement);
   }
@@ -1785,15 +1789,17 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
    */
   #openGlanceForTab(tab) {
     // Little Arc has no originating click, so synthesise a centered origin.
-    // Zero width/height skips the snapshot branch; the open animation still runs.
+    // width/height MUST be non-zero: openGlance treats falsy dimensions as
+    // "no data" and merges in lastLinkClickData - the user's last real click,
+    // which made panels fly in from wherever that click happened to be.
     const win = tab.ownerGlobal;
     this.openGlance(
       {
         url: undefined, // no navigation: the browser already exists (adopt path)
         clientX: Math.round((win?.innerWidth || 1200) / 2),
         clientY: Math.round((win?.innerHeight || 800) / 2),
-        width: 0,
-        height: 0,
+        width: 1,
+        height: 1,
       },
       tab,       // existingTab => ADOPT the browser Gecko already built (preserves opener)
       tab.owner
