@@ -41,3 +41,4 @@ bloat-dump.log
 configs/branding/release.zen-orig/
 spikes/
 vector-dev-profile/
+*.bak
