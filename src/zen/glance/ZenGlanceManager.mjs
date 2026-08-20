@@ -368,9 +368,12 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
         width: 14px; cursor: ew-resize; z-index: 10;
         display: flex; align-items: center; justify-content: center;`;
       const pill = document.createElement("div");
+      // Solid grey, not light-dark(): this is an inline style on a floating
+      // panel and must be visible over any page background on both themes.
       pill.style.cssText = `
-        width: 4px; height: 52px; border-radius: 999px;
-        background: light-dark(rgba(0,0,0,.28), rgba(255,255,255,.28));
+        width: 5px; height: 56px; border-radius: 999px;
+        background: rgba(127, 132, 145, 0.85);
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.35), 0 1px 4px rgba(0,0,0,0.35);
         opacity: 0; transition: opacity .15s ease, height .15s ease;`;
       grip.appendChild(pill);
       grip.addEventListener("mouseenter", () => {
@@ -404,14 +407,23 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
         grip.addEventListener("pointermove", onMove);
         grip.addEventListener("pointerup", onUp);
       });
-      // Right-click: adopt the current width as the default for every site.
-      grip.addEventListener("contextmenu", (e) => {
+      // Right-click OR double-click: adopt the current width as the default
+      // for every site (two-finger click on a trackpad also lands here).
+      const saveAsDefault = (e) => {
         e.preventDefault();
         this.#vectorSaveWidth(
           this.browserWrapper.getBoundingClientRect().width,
           true
         );
-      });
+        // Confirm visually: the pill blinks accent-colored twice.
+        pill.style.background = "var(--zen-primary-color, #4250e6)";
+        pill.style.opacity = "1";
+        setTimeout(() => { pill.style.opacity = "0.25"; }, 150);
+        setTimeout(() => { pill.style.opacity = "1"; }, 300);
+        setTimeout(() => { pill.style.background = "rgba(127, 132, 145, 0.85)"; }, 700);
+      };
+      grip.addEventListener("contextmenu", saveAsDefault);
+      grip.addEventListener("dblclick", saveAsDefault);
       this.browserWrapper.appendChild(grip);
       this.#vectorGrips.push(grip);
     }
@@ -598,6 +610,12 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     // the window.open hook handed us.
     this.#vectorPendingHost = data.vectorTargetHost || null;
     this.#vectorApplyStoredWidth();
+    // The panel frame paints ONE full-size frame in the async gap between
+    // becoming deck-selected and the arc animation's first transform keyframe
+    // (Zen's own FIXME notes the flashing). Hide the wrapper across that gap;
+    // #executeGlanceAnimation restores it in the same task that applies the
+    // first keyframe, so no full-size frame ever reaches the screen.
+    this.browserWrapper.style.opacity = "0";
 
     return this.#animateGlanceOpening(data, browserElement);
   }
@@ -740,6 +758,8 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
    * @param {Function} resolve - Promise resolve function
    */
   #executeGlanceAnimation(data, browserElement, resolve) {
+    // Un-hide in the same task as the first animation keyframe (see openGlance).
+    this.browserWrapper.style.opacity = "";
     const imageDataElement = this.#handleElementPreview(data);
 
     // Create the curved animation sequence. The transform origin is handled
@@ -999,6 +1019,7 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     // read/write layout thrashing.
     this.browserWrapper.style.height = "100%";
     this.browserWrapper.style.width = "80%";
+    this.browserWrapper.style.opacity = "";
     // Zen's 80% default lands after the animation and silently clobbers the
     // remembered Vector width applied during setup - re-apply it last.
     this.#vectorApplyStoredWidth();
