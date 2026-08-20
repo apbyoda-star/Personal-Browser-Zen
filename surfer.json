@@ -1,8 +1,8 @@
 {
-  "name": "Zen Browser",
-  "vendor": "Zen OSS Team",
-  "appId": "zen",
-  "binaryName": "zen",
+  "name": "Vector",
+  "vendor": "Bruce Yoder",
+  "appId": "vector",
+  "binaryName": "vector",
   "version": {
     "product": "firefox",
     "version": "154.0",
@@ -16,9 +16,9 @@
   "brands": {
     "release": {
       "backgroundColor": "#282A33",
-      "brandShorterName": "Zen",
-      "brandShortName": "Zen",
-      "brandFullName": "Zen Browser",
+      "brandShorterName": "Vector",
+      "brandShortName": "Vector",
+      "brandFullName": "Vector",
       "release": {
         "displayVersion": "1.21.15b",
         "github": {
@@ -36,9 +36,9 @@
     },
     "twilight": {
       "backgroundColor": "#282A33",
-      "brandShorterName": "Zen",
-      "brandShortName": "Twilight",
-      "brandFullName": "Zen Twilight",
+      "brandShorterName": "Vector",
+      "brandShortName": "Vector",
+      "brandFullName": "Vector Twilight",
       "release": {
         "displayVersion": "1.22t",
         "github": {

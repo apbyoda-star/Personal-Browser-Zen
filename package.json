@@ -33,7 +33,9 @@
     "lc": "surfer license-check",
     "lc:fix": "surfer license-check --fix",
     "use-moz-src": "cd engine && ./mach use-moz-src",
-    "ci": "surfer ci --brand release --display-version"
+    "ci": "surfer ci --brand release --display-version",
+    "postinstall": "node scripts/postinstall-fixups.mjs",
+    "brand:vector": "node -e \"require('fs').mkdirSync('.surfer',{recursive:true});require('fs').writeFileSync('.surfer/dynamicConfig.brand.json','\\\"release\\\"')\""
   },
   "repository": {
     "type": "git",

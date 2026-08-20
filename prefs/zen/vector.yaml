@@ -1,0 +1,9 @@
+# Vector-specific preferences.
+
+# Little Arc requirement (Phase 1 Spike C, verified 2026-08-19):
+# Default value 2 lets "popups with features" (e.g. window.open(url,'n','width=1200,height=800'))
+# bypass nsIBrowserDOMWindow entirely and open a real OS window, so the Little Arc
+# hook never sees them. 0 = "no restrictions - divert everything".
+# Required for the Tekmetric -> PartsTech punch-out to land in the floating panel.
+- name: browser.link.open_newwindow.restriction
+  value: 0
