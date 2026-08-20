@@ -266,141 +266,6 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     this.contentWrapper = browser.closest(".browserStack");
   }
 
-  // ── Vector: Little Arc symmetric resize + per-hostname width memory ──────
-  // Ported behaviour from Vector (MiniWindow.tsx / main/index.ts): dragging
-  // either edge grows both sides (the panel stays centered), width is clamped
-  // to [520px, 95vw], and the chosen width is remembered PER HOSTNAME (every
-  // RO/part page has its own URL, so a full-URL key would mean resizing the
-  // same site forever). Right-click a grip to save the current width as the
-  // default for all sites.
-  #vectorGrips = [];
-  #vectorEscListener = null;
-
-  #vectorWidths() {
-    try {
-      return JSON.parse(
-        Services.prefs.getStringPref("vector.little-arc.widths", "{}")
-      );
-    } catch {
-      return {};
-    }
-  }
-
-  #vectorHost() {
-    try {
-      return this.#currentBrowser?.currentURI?.host || "*";
-    } catch {
-      return "*";
-    }
-  }
-
-  #vectorSaveWidth(px, asDefault = false) {
-    const widths = this.#vectorWidths();
-    widths[asDefault ? "*" : this.#vectorHost()] = Math.round(px);
-    Services.prefs.setStringPref(
-      "vector.little-arc.widths",
-      JSON.stringify(widths)
-    );
-  }
-
-  #vectorClampWidth(px) {
-    const max = Math.round(window.innerWidth * 0.95);
-    return Math.max(520, Math.min(px, max));
-  }
-
-  #vectorSetupResize() {
-    if (!this.browserWrapper || this.#vectorGrips.length) {
-      return;
-    }
-    // Apply the remembered width (host first, then the explicit default).
-    const widths = this.#vectorWidths();
-    const saved = widths[this.#vectorHost()] ?? widths["*"];
-    if (saved) {
-      this.browserWrapper.style.setProperty(
-        "width",
-        this.#vectorClampWidth(saved) + "px",
-        "important"
-      );
-    }
-    for (const side of ["left", "right"]) {
-      const grip = document.createElement("div");
-      grip.className = "vector-glance-grip";
-      grip.style.cssText = `
-        position: absolute; top: 0; bottom: 0; ${side}: 0;
-        width: 14px; cursor: ew-resize; z-index: 10;
-        display: flex; align-items: center; justify-content: center;`;
-      const pill = document.createElement("div");
-      pill.style.cssText = `
-        width: 4px; height: 52px; border-radius: 999px;
-        background: light-dark(rgba(0,0,0,.28), rgba(255,255,255,.28));
-        opacity: 0; transition: opacity .15s ease, height .15s ease;`;
-      grip.appendChild(pill);
-      grip.addEventListener("mouseenter", () => {
-        pill.style.opacity = "1";
-        pill.style.height = "76px";
-      });
-      grip.addEventListener("mouseleave", () => {
-        pill.style.opacity = "0";
-        pill.style.height = "52px";
-      });
-      grip.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        grip.setPointerCapture(e.pointerId);
-        const startX = e.clientX;
-        const startW = this.browserWrapper.getBoundingClientRect().width;
-        const onMove = (ev) => {
-          const dx = ev.clientX - startX;
-          // Left grip dragged left widens; right grip dragged right widens.
-          const delta = side === "left" ? -dx : dx;
-          const w = this.#vectorClampWidth(startW + delta * 2);
-          this.browserWrapper.style.setProperty("width", w + "px", "important");
-        };
-        const onUp = () => {
-          grip.removeEventListener("pointermove", onMove);
-          grip.removeEventListener("pointerup", onUp);
-          this.#vectorSaveWidth(
-            this.browserWrapper.getBoundingClientRect().width
-          );
-        };
-        grip.addEventListener("pointermove", onMove);
-        grip.addEventListener("pointerup", onUp);
-      });
-      // Right-click: adopt the current width as the default for every site.
-      grip.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        this.#vectorSaveWidth(
-          this.browserWrapper.getBoundingClientRect().width,
-          true
-        );
-      });
-      this.browserWrapper.appendChild(grip);
-      this.#vectorGrips.push(grip);
-    }
-    // Chrome-level Esc: the content actor's Esc only fires while the PAGE has
-    // focus (Vector had the identical bug). This works regardless of focus.
-    this.#vectorEscListener = (e) => {
-      if (e.key === "Escape" && this.#currentGlanceID) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.closeGlance({ onTabClose: false });
-      }
-    };
-    window.addEventListener("keydown", this.#vectorEscListener, true);
-  }
-
-  #vectorTeardownResize() {
-    for (const grip of this.#vectorGrips) {
-      grip.remove();
-    }
-    this.#vectorGrips = [];
-    if (this.#vectorEscListener) {
-      window.removeEventListener("keydown", this.#vectorEscListener, true);
-      this.#vectorEscListener = null;
-    }
-    this.browserWrapper?.style.removeProperty("width");
-  }
-
   /**
    * Create new overlay buttons with animation
    *
@@ -1329,7 +1194,6 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
    * @param {Tab} lastCurrentTab - The tab being closed
    */
   #cleanupGlanceElements(lastCurrentTab) {
-    this.#vectorTeardownResize();
     this.overlay.classList.remove("zen-glance-overlay");
     gBrowser
       ._getSwitcher()
@@ -1412,7 +1276,6 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
 
     this.overlay.classList.add("deck-selected");
     this.overlay.classList.add("zen-glance-overlay");
-    this.#vectorSetupResize();
   }
 
   /**

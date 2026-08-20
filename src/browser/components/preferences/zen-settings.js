@@ -1255,3 +1255,15 @@ Preferences.addSetting({
   id: "zenWorkspaceContinueWhereLeftOff",
   pref: "zen.workspaces.continue-where-left-off",
 });
+
+// Vector: "Theme colors…" opens Zen's per-Space gradient picker from Settings.
+// The picker lives in the browser window, so reach it via the top chrome window.
+{
+  const btn = document.getElementById("vectorOpenThemePicker");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      const win = window.browsingContext.topChromeWindow;
+      win.document.getElementById("cmd_zenOpenZenThemePicker")?.doCommand();
+    });
+  }
+}
