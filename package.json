@@ -37,7 +37,7 @@
     "postinstall": "node scripts/postinstall-fixups.mjs",
     "brand:vector": "node -e \"require('fs').mkdirSync('.surfer',{recursive:true});require('fs').writeFileSync('.surfer/dynamicConfig.brand.json','\\\"release\\\"')\"",
     "l10n:en-US": "python3 scripts/update_en_US_packs.py",
-    "dist:apply": "node -e \"const fs=require('fs'),p='engine/obj-aarch64-apple-darwin/dist/Vector.app/Contents/Resources/distribution';fs.mkdirSync(p,{recursive:true});fs.copyFileSync('distribution/policies.json',p+'/policies.json');console.log('policies.json -> app bundle')\""
+    "dist:apply": "node scripts/dist-apply.mjs"
   },
   "repository": {
     "type": "git",
