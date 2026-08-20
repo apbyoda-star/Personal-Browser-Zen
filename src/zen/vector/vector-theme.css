@@ -169,8 +169,13 @@
   overflow: visible;
   z-index: 100;
 }
-:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:has(#urlbar[open]) #nav-bar > :not(#urlbar-container) {
+/* Hide every docked nav-bar pixel; the floating urlbar alone re-enables its
+   own visibility (visibility, unlike display, can be restored by a child). */
+:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:has(#urlbar[open]) #nav-bar {
   visibility: hidden;
+}
+:root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper #urlbar[open] {
+  visibility: visible;
 }
 
 /* Magnifier launcher: only in icon mode */
