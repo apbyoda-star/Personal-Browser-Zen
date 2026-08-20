@@ -277,6 +277,9 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
   // default for all sites.
   #vectorGrips = [];
   #vectorEscListener = null;
+  // Destination host of the punch-out being opened, known BEFORE the page
+  // loads - the width lookup must not wait for currentURI to catch up.
+  #vectorPendingHost = null;
 
   #vectorWidths() {
     try {
@@ -290,10 +293,12 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
 
   #vectorHost() {
     try {
-      return this.#currentBrowser?.currentURI?.host || "*";
-    } catch {
-      return "*";
-    }
+      const h = this.#currentBrowser?.currentURI?.host;
+      if (h) {
+        return h.toLowerCase();
+      }
+    } catch {}
+    return this.#vectorPendingHost || "*";
   }
 
   #vectorSaveWidth(px, asDefault = false) {
@@ -433,6 +438,7 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     }
     this.browserWrapper?.style.removeProperty("width");
     this.browserWrapper?.style.removeProperty("translate");
+    this.#vectorPendingHost = null;
   }
 
   /**
@@ -587,7 +593,10 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     this.overlay.classList.add("zen-glance-overlay");
     // Vector: set the remembered width BEFORE the open animation measures its
     // reference size, so the panel animates in at its final width instead of
-    // opening narrow and popping wider afterwards.
+    // opening narrow and popping wider afterwards. The punch-out page is still
+    // about:blank at this instant, so the lookup keys by the destination host
+    // the window.open hook handed us.
+    this.#vectorPendingHost = data.vectorTargetHost || null;
     this.#vectorApplyStoredWidth();
 
     return this.#animateGlanceOpening(data, browserElement);
@@ -1775,7 +1784,7 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
 
     try {
       if (this.shouldOpenTabInGlance(tab, uri)) {
-        this.#openGlanceForTab(tab);
+        this.#openGlanceForTab(tab, uri);
       }
     } catch (e) {
       console.error("Error opening glance for tab:", e);
@@ -1787,7 +1796,7 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
    *
    * @param {Tab} tab - The tab to open glance for
    */
-  #openGlanceForTab(tab) {
+  #openGlanceForTab(tab, uri = null) {
     // Little Arc has no originating click, so synthesise a centered origin.
     // width/height MUST be non-zero: openGlance treats falsy dimensions as
     // "no data" and merges in lastLinkClickData - the user's last real click,
@@ -1800,6 +1809,13 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
         clientY: Math.round((win?.innerHeight || 800) / 2),
         width: 1,
         height: 1,
+        vectorTargetHost: (() => {
+          try {
+            return uri?.host?.toLowerCase() || null;
+          } catch {
+            return null;
+          }
+        })(),
       },
       tab,       // existingTab => ADOPT the browser Gecko already built (preserves opener)
       tab.owner
