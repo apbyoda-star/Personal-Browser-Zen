@@ -1,0 +1,139 @@
+/*
+ * Vector theme tokens.
+ *
+ * Ported from Vector (Electron) src/renderer/src/styles.css :root + [data-theme='light'].
+ * Two deliberate changes from the original:
+ *   1. Vector used `[data-theme='light']` to swap a second full palette. Here we use
+ *      CSS light-dark(), which is what Zen's own zen-theme.css uses, so one definition
+ *      serves both schemes and Zen's existing scheme switching keeps working.
+ *   2. Vector used an `html.win` class (set from JS) for the Windows font. Here we use
+ *      Firefox's native `-moz-platform` media query, so it is correct on every platform
+ *      with no JS. Windows is the primary target - do not regress this.
+ *
+ * Load order: this must come AFTER zen-theme.css so the bridge section can override
+ * Zen's derived colors.
+ */
+
+:host(:is(.anonymous-content-host, notification-message)),
+:root {
+  /* ── Surface ladder ─────────────────────────────────────────────────────
+     Dark: page/canvas is deepest. Light: canvas is the grey, surface-1 white. */
+  --vector-canvas:    light-dark(#f4f5f7, #0b0c10); /* page card / deepest   */
+  --vector-surface-1: light-dark(#ffffff, #121319); /* sidebar, panels rest  */
+  --vector-surface-2: light-dark(#eef0f3, #1a1c24); /* raised panel / hover  */
+  --vector-surface-3: light-dark(#e3e6ec, #23262f); /* active / menus        */
+  --vector-surface-4: light-dark(#d9dde5, #2b2f3a); /* dragged tile, tooltip */
+
+  /* ── Hairlines (borders carry elevation, not shadows) ── */
+  --vector-line:        light-dark(#d8dbe2, #262932);
+  --vector-line-strong: light-dark(#c2c7d1, #353944);
+  --vector-line-soft:   light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.06));
+
+  /* ── Ink (text) — 4 steps ── */
+  --vector-ink:        light-dark(#1b2230, #eceef3);
+  --vector-ink-muted:  light-dark(#4b5364, #a7adba);
+  --vector-ink-subtle: light-dark(#6b7280, #9aa0ad);
+  --vector-ink-faint:  light-dark(#a3a9b4, #565c68);
+
+  /* ── Accent (single chromatic brand color).
+     Note the hover direction flips: light darkens, dark lightens. ── */
+  --vector-accent:       light-dark(#4250e6, #6e7bff);
+  --vector-accent-hover: light-dark(#3643d1, #8590ff);
+  --vector-accent-press: light-dark(#2c38bd, #5965e6);
+  --vector-accent-ink:   #ffffff;
+  --vector-accent-soft:  light-dark(rgba(66, 80, 230, 0.13), rgba(110, 123, 255, 0.16));
+  --vector-accent-line:  light-dark(rgba(66, 80, 230, 0.42), rgba(110, 123, 255, 0.42));
+
+  /* ── Semantic ── */
+  --vector-success: light-dark(#1d8f3c, #27a644);
+  --vector-warn:    light-dark(#a97a08, #e0a020);
+  --vector-danger:  light-dark(#d64545, #ff6b6b);
+  --vector-info:    light-dark(#0b7fc9, #57c1ff);
+
+  /* ── Radii ── */
+  --vector-r-xs: 4px;
+  --vector-r-sm: 6px;
+  --vector-r-md: 8px;
+  --vector-r-lg: 12px;
+  --vector-r-xl: 16px;
+  --vector-r-2xl: 20px;
+  --vector-r-pill: 9999px;
+
+  /* ── Spacing ── */
+  --vector-s-1: 4px;  --vector-s-2: 8px;  --vector-s-3: 12px; --vector-s-4: 16px;
+  --vector-s-5: 24px; --vector-s-6: 32px; --vector-s-7: 48px; --vector-s-8: 64px;
+
+  /* ── Type scale ── */
+  --vector-fs-caption: 12px; --vector-fs-sm: 13px;  --vector-fs-body: 14px;
+  --vector-fs-md: 16px;      --vector-fs-lg: 18px;  --vector-fs-h2: 20px;
+  --vector-fs-h1: 24px;      --vector-fs-display: 32px;
+
+  /* ── Elevation (light gets softer, cooler shadows) ── */
+  --vector-e-1: light-dark(0 1px 2px rgba(16, 24, 40, 0.08),      0 1px 2px rgba(0, 0, 0, 0.25));
+  --vector-e-2: light-dark(0 8px 22px -8px rgba(16, 24, 40, 0.18), 0 8px 22px -8px rgba(0, 0, 0, 0.45));
+  --vector-e-3: light-dark(0 16px 40px -12px rgba(16, 24, 40, 0.22), 0 16px 40px -12px rgba(0, 0, 0, 0.55));
+  --vector-e-4: light-dark(0 24px 70px -16px rgba(16, 24, 40, 0.26), 0 24px 70px -16px rgba(0, 0, 0, 0.6));
+  --vector-edge-hi: light-dark(inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.05));
+
+  /* ── Motion ── */
+  --vector-ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --vector-ease-spring: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --vector-t-fast: 120ms;
+  --vector-t-base: 180ms;
+  --vector-t-slow: 260ms;
+
+  /* ── Page card frame (the Arc-style floating page).
+     Overridden by the edge-glow feature when enabled. ── */
+  /* light-dark() takes exactly TWO arguments, so a multi-shadow value cannot be
+     passed through it directly (the top-level comma between shadows would read as
+     extra arguments). Send only the COLORS through light-dark() and compose the
+     shadow from them. */
+  --vector-frame-ring: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.05));
+  --vector-frame-glow: light-dark(rgba(0, 0, 0, 0.13), rgba(0, 0, 0, 0.42));
+  --vector-frame-blur: light-dark(24px, 30px);
+  --vector-frame-lift: light-dark(8px, 10px);
+  --vector-frame-fx:
+    0 0 0 1px var(--vector-frame-ring),
+    0 var(--vector-frame-lift) var(--vector-frame-blur) var(--vector-frame-glow);
+
+  /* ── Typography ─────────────────────────────────────────────────────────
+     Default stack (macOS/Linux). Windows overridden below. */
+  --vector-f-ui: 'Inter Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --vector-f-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+  --vector-font-features: 'ss03', 'cv11', 'calt';
+}
+
+/* Windows: the native system font is crisper than Inter here, and the Inter-only
+   feature settings (ss03/cv11) must not be requested on Segoe.
+   Vector did this with an `html.win` class; -moz-platform is the native equivalent. */
+@media (-moz-platform: windows) {
+  :host(:is(.anonymous-content-host, notification-message)),
+  :root {
+    --vector-f-ui: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+    --vector-font-features: normal;
+  }
+}
+
+/* ── Bridge: drive Zen's existing token layer from Vector's palette ─────────
+   Zen derives most of its colors from --zen-primary-color via color-mix().
+   Pointing that at Vector's accent recolors everything still deriving from it,
+   while the explicit overrides below pin the surfaces Vector is opinionated about. */
+:host(:is(.anonymous-content-host, notification-message)),
+:root {
+  --zen-primary-color: var(--vector-accent);
+  --zen-border-radius: var(--vector-r-md);
+
+  --zen-colors-primary: var(--vector-surface-2);
+  --zen-colors-secondary: var(--vector-surface-3);
+  --zen-colors-tertiary: var(--vector-surface-1);
+  --zen-colors-border: var(--vector-line);
+  --zen-colors-border-contrast: var(--vector-line-strong);
+  --zen-colors-hover-bg: var(--vector-surface-3);
+  --zen-colors-input-bg: var(--vector-surface-2);
+  --zen-colors-primary-foreground: var(--vector-ink);
+
+  --zen-dialog-background: var(--vector-surface-1);
+  --zen-urlbar-background: var(--vector-surface-2);
+  --zen-toolbar-element-bg: var(--vector-surface-2);
+  --zen-toolbar-element-bg-hover: var(--vector-surface-3);
+}

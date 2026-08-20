@@ -7,3 +7,100 @@
 # Required for the Tekmetric -> PartsTech punch-out to land in the floating panel.
 - name: browser.link.open_newwindow.restriction
   value: 0
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Updater — DISABLED (2026-08-19)
+# ─────────────────────────────────────────────────────────────────────────────
+# The fork inherits Zen's update server (surfer.json updateHostname =
+# updates.zen-browser.app). Left enabled, it offers a real *Zen Browser* update
+# and installing it OVERWRITES the Vector build with upstream Zen, destroying
+# the rebrand and any local work. Observed live on 2026-08-19.
+# Re-enable only after pointing updateHostname at our own update server.
+- name: app.update.auto
+  value: false
+
+- name: app.update.enabled
+  value: false
+
+- name: app.update.checkInstallTime
+  value: false
+
+- name: app.update.background.scheduling.enabled
+  value: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Zen brand-URL leaks (2026-08-19)
+# ─────────────────────────────────────────────────────────────────────────────
+# surfer HARDCODES Zen URLs into the generated branding prefs
+# (node_modules/@zen-browser/surfer/dist/commands/patches/branding-patch.js:263+),
+# so they cannot be fixed by editing configs/branding/. They are what opened the
+# "Welcome!" and "Privacy Policy - Zen" tabs on first run.
+# Files in browser/defaults/preferences/ load alphabetically and
+# firefox-branding.js sorts BEFORE firefox.js (which carries these), so these win.
+- name: startup.homepage_override_url
+  value: ""
+
+- name: startup.homepage_welcome_url
+  value: ""
+
+- name: startup.homepage_welcome_url.additional
+  value: ""
+
+- name: app.update.url.manual
+  value: "https://github.com/apbyoda-star/Personal-Browser-Zen/releases"
+
+- name: app.update.url.details
+  value: "https://github.com/apbyoda-star/Personal-Browser-Zen/releases"
+
+- name: app.releaseNotesURL
+  value: "https://github.com/apbyoda-star/Personal-Browser-Zen/releases"
+
+- name: app.releaseNotesURL.aboutDialog
+  value: "https://github.com/apbyoda-star/Personal-Browser-Zen/releases"
+
+- name: app.releaseNotesURL.prompt
+  value: "https://github.com/apbyoda-star/Personal-Browser-Zen/releases"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Zen natives retuned to Vector's measured behaviour (Phase 3)
+# Each cites the Vector source it came from. We CONFIGURE Zen rather than
+# porting Vector's parallel implementation.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Vector FolderPeek.tsx opened the hover flyout after 280ms (Zen default 500).
+- name: zen.folders.search.hover-delay
+  value: 280
+
+# Vector's CommandBox was ALWAYS a centered floating palette.
+# Zen's 'floating-on-type' only floats once you type.
+- name: zen.urlbar.behavior
+  value: "float"
+
+# Vector App.tsx MAX_W = 440 (Zen default 500).
+- name: zen.view.sidebar-expanded.max-width
+  value: 440
+
+# Vector App.tsx used a 240ms grace before collapsing the hover-revealed
+# sidebar, to kill diagonal-mouse-wobble flicker (Zen default 150).
+- name: zen.view.compact.sidebar-keep-hover.duration
+  value: 240
+
+# Vector committed a space swipe over 200ms (Zen default 250).
+- name: zen.workspaces.switch-animation-duration
+  value: 200
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Window controls — PLATFORM SPLIT (Windows is primary)
+# ─────────────────────────────────────────────────────────────────────────────
+# macOS: keep hidden, native traffic lights are used.
+- name: zen.view.hide-window-controls
+  value: true
+  condition: "defined(XP_MACOSX)"
+
+# Windows: do NOT hide. Vector replaced them with a custom hover-reveal pill
+# (WindowControls.tsx, Windows-only by design) which is Phase 4 work. Hiding
+# them now would leave a Windows user unable to minimise/maximise/close.
+# Flip to true ONLY after that pill ships and is verified on Windows.
+- name: zen.view.hide-window-controls
+  value: false
+  condition: "defined(XP_WIN)"
