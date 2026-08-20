@@ -415,12 +415,21 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
           this.browserWrapper.getBoundingClientRect().width,
           true
         );
-        // Confirm visually: the pill blinks accent-colored twice.
-        pill.style.background = "var(--zen-primary-color, #4250e6)";
+        // Confirm visually: the pill swells and glows Vector blue for a
+        // moment - a color change, not a blink (owner request).
         pill.style.opacity = "1";
-        setTimeout(() => { pill.style.opacity = "0.25"; }, 150);
-        setTimeout(() => { pill.style.opacity = "1"; }, 300);
-        setTimeout(() => { pill.style.background = "rgba(127, 132, 145, 0.85)"; }, 700);
+        pill.style.background = "var(--zen-primary-color, #4250e6)";
+        pill.style.width = "7px";
+        pill.style.height = "96px";
+        pill.style.boxShadow =
+          "0 0 0 2px rgba(255,255,255,0.5), 0 0 14px 3px var(--zen-primary-color, #4250e6)";
+        setTimeout(() => {
+          pill.style.background = "rgba(127, 132, 145, 0.85)";
+          pill.style.width = "5px";
+          pill.style.height = "76px";
+          pill.style.boxShadow =
+            "0 0 0 1px rgba(255,255,255,0.35), 0 1px 4px rgba(0,0,0,0.35)";
+        }, 800);
       };
       grip.addEventListener("contextmenu", saveAsDefault);
       grip.addEventListener("dblclick", saveAsDefault);
@@ -647,7 +656,10 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
       // Recalculate location. When opening from pinned tabs,
       // view splitter doesn't catch if the tab is a glance tab or not.
       gZenViewSplitter.onLocationChange(browserElement);
-      if (data.width && data.height) {
+      // Little Arc's origin is a synthetic 1x1 point: snapshotting it just
+      // smears one pixel across the growing panel and yanks it off at the
+      // end - a flash by construction. Skip the preview; show the browser.
+      if (data.width && data.height && !data.vectorLittleArc) {
         // It is guaranteed that we will animate this opacity later on
         // when we start animating the glance.
         this.contentWrapper.style.opacity = 0;
@@ -1830,6 +1842,7 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
         clientY: Math.round((win?.innerHeight || 800) / 2),
         width: 1,
         height: 1,
+        vectorLittleArc: true,
         vectorTargetHost: (() => {
           try {
             return uri?.host?.toLowerCase() || null;
