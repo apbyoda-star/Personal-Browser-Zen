@@ -110,3 +110,41 @@
 # ─────────────────────────────────────────────────────────────────────────────
 - name: vector.little-arc.enabled
   value: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Update popup — the REAL kill switch (2026-08-20)
+# ─────────────────────────────────────────────────────────────────────────────
+# app.update.auto=false does NOT disable updates — it makes them PROMPT (the
+# "Update Ready to Install / Restart Vector" popup). The build still checks
+# Zen's live server (surfer.json updateHostname) and offers the Zen build.
+# Emptying app.update.url stops the check entirely: nothing queried, no popup.
+- name: app.update.url
+  value: ""
+
+- name: app.update.staging.enabled
+  value: false
+
+- name: app.update.service.enabled
+  value: false
+
+- name: app.update.background.enabled
+  value: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# First-run / what's-new tabs — stop them opening on version change
+# ─────────────────────────────────────────────────────────────────────────────
+# "ignore" is Firefox's canonical suppressor for the what's-new/override page
+# that opened the zen-browser.app "Welcome!" + privacy-policy tabs.
+- name: browser.startup.homepage_override.mstone
+  value: "ignore"
+  sticky: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Zen's OWN update notification (separate from Firefox's native updater)
+# ─────────────────────────────────────────────────────────────────────────────
+# ZenUpdates.mjs shows a "Download the latest version" doorhanger pointing at
+# zen-browser.app/download whenever the running version != the profile's stored
+# last-version. Disabling the notification is the clean kill (checkForZenUpdates
+# returns early). Re-enable if/when we ship our own versioned releases.
+- name: zen.updates.show-update-notification
+  value: false
