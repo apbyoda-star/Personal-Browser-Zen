@@ -6,7 +6,9 @@
 
 import { nsZenDOMOperatedFeature } from "chrome://browser/content/zen-components/ZenCommonUtils.mjs";
 
-const GLANCE_BACKGROUND_SCALE = 0.97;
+// Vector: the page behind a Little Arc panel stays full-size (only dims).
+// Zen's 0.97 shrink read as "the whole app got smaller" to the owner.
+const GLANCE_BACKGROUND_SCALE = 1;
 
 /**
  * Manages the Zen Glance feature - a preview overlay system for tabs
@@ -308,6 +310,28 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     return Math.max(520, Math.min(px, max));
   }
 
+  #vectorApplyStoredWidth(retry = 0) {
+    if (!this.browserWrapper || !this.#currentGlanceID) {
+      return;
+    }
+    const widths = this.#vectorWidths();
+    const host = this.#vectorHost();
+    const saved = widths[host] ?? widths["*"];
+    if (saved) {
+      this.browserWrapper.style.setProperty(
+        "width",
+        this.#vectorClampWidth(saved) + "px",
+        "important"
+      );
+    }
+    // A punch-out's URL is often still loading when the panel finishes
+    // opening, so the host reads as "*"; retry until the real host is known
+    // and its remembered width can land.
+    if (host === "*" && retry < 3) {
+      setTimeout(() => this.#vectorApplyStoredWidth(retry + 1), 700);
+    }
+  }
+
   #vectorSetupResize() {
     if (!this.browserWrapper || this.#vectorGrips.length) {
       return;
@@ -330,16 +354,7 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
         this.browserWrapper.style.translate = `${Math.round(shift)}px 0`;
       }
     } catch {}
-    // Apply the remembered width (host first, then the explicit default).
-    const widths = this.#vectorWidths();
-    const saved = widths[this.#vectorHost()] ?? widths["*"];
-    if (saved) {
-      this.browserWrapper.style.setProperty(
-        "width",
-        this.#vectorClampWidth(saved) + "px",
-        "important"
-      );
-    }
+    this.#vectorApplyStoredWidth();
     for (const side of ["left", "right"]) {
       const grip = document.createElement("div");
       grip.className = "vector-glance-grip";
@@ -971,6 +986,9 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     // read/write layout thrashing.
     this.browserWrapper.style.height = "100%";
     this.browserWrapper.style.width = "80%";
+    // Zen's 80% default lands after the animation and silently clobbers the
+    // remembered Vector width applied during setup - re-apply it last.
+    this.#vectorApplyStoredWidth();
     this.browserWrapper.removeAttribute("animate");
     this.browserWrapper.setAttribute("has-finished-animation", true);
     this.overlay.style.removeProperty("overflow");

@@ -189,7 +189,7 @@
 }
 /* Zen pushes the collapsed sidebar down 42px to clear the top toolbar;
    we removed that toolbar in icon mode, so reclaim the space. */
-:root:not([zen-sidebar-expanded="true"]) #navigator-toolbox {
+:root:not([zen-sidebar-expanded="true"]) #navigator-toolbox#navigator-toolbox#navigator-toolbox {
   margin-top: 0 !important;
 }
 #vector-search-button {
