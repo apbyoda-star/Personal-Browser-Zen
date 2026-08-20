@@ -40,8 +40,111 @@ var gVectorSidebarSnap = {
     toolbox.prepend(box);
   },
 
+  // ── Floating search: center on the PAGE AREA, not the window ──────────
+  // Zen positions the floating urlbar with `left: 50%` of the window and a
+  // top of (windowHeight - 333)/2, so the sidebar shoves it off-centre
+  // horizontally and the input rides high because the 333px reservation for
+  // the results list is centred rather than the input itself.
+  // Vector centres the INPUT ROW on the content area on both axes, keeping
+  // Zen's fixed reservation so the panel never jumps around while typing.
+  _centerUrlbar() {
+    const urlbar = document.getElementById("urlbar");
+    const panels = gBrowser?.tabpanels;
+    if (!urlbar || !panels) {
+      return;
+    }
+    const area = panels.getBoundingClientRect();
+    if (!area.width || !area.height) {
+      return;
+    }
+    const RESERVED = 333; // Zen's assumed panel height (input + results list)
+    const EDGE = 24;
+    // The INPUT ROW height - NOT urlbar.getBoundingClientRect().height, which
+    // includes the results list and would centre the whole block, leaving the
+    // bar itself riding high above the page centre.
+    const inputH =
+      parseFloat(
+        getComputedStyle(urlbar).getPropertyValue("--urlbar-container-height")
+      ) || 62;
+
+    let top = area.y + area.height / 2 - inputH / 2;
+    // Never let the reserved results area spill past the page bottom.
+    const maxTop = area.bottom - EDGE - RESERVED;
+    if (top > maxTop) {
+      top = maxTop;
+    }
+    if (top < area.y + EDGE) {
+      top = area.y + EDGE;
+    }
+    const targetCX = area.x + area.width / 2;
+    const targetInputCY = top + inputH / 2;
+
+    // Set `top`/`left` DIRECTLY, not via --zen-urlbar-top: Zen rewrites that
+    // variable from window geometry after the urlbar opens and would undo us.
+    // Inline !important also beats Zen's `top:`/`left: 50%` stylesheet rules.
+    const place = (l, t) => {
+      urlbar.style.setProperty("left", Math.round(l) + "px", "important");
+      urlbar.style.setProperty("top", Math.round(t) + "px", "important");
+    };
+    place(targetCX, top);
+
+    // Self-correct. The theme applies its own margins and a -50% translate to
+    // the urlbar, so the box does not necessarily land where `left`/`top` say
+    // (measured 12px off in the collapsed sidebar). Measure where it actually
+    // rendered and close the gap, rather than hard-coding a fudge factor that
+    // would rot on another platform or theme.
+    const r = urlbar.getBoundingClientRect();
+    const dx = targetCX - (r.x + r.width / 2);
+    const dy = targetInputCY - (r.y + inputH / 2);
+    if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) {
+      let correctedTop = top + dy;
+      if (correctedTop > maxTop) {
+        correctedTop = maxTop;
+      }
+      if (correctedTop < area.y + EDGE) {
+        correctedTop = area.y + EDGE;
+      }
+      place(targetCX + dx, correctedTop);
+    }
+  },
+
+  // The sidebar animates when it collapses/expands, so a measurement taken the
+  // instant the urlbar opens can read a content area that is still moving.
+  // Re-centre once the animation has settled.
+  _centerUrlbarSettled() {
+    this._centerUrlbar();
+    requestAnimationFrame(() => this._centerUrlbar());
+    setTimeout(() => this._centerUrlbar(), 120);
+    setTimeout(() => this._centerUrlbar(), 320);
+  },
+
+  _watchUrlbar() {
+    const urlbar = document.getElementById("urlbar");
+    if (!urlbar) {
+      requestAnimationFrame(() => this._watchUrlbar());
+      return;
+    }
+    // Re-centre every time it opens: the sidebar may have been resized or
+    // collapsed since last time, which moves the content area.
+    new MutationObserver(() => {
+      if (urlbar.hasAttribute("open")) {
+        this._centerUrlbarSettled();
+      } else {
+        // Drop our overrides so the docked urlbar isn't left displaced.
+        urlbar.style.removeProperty("top");
+        urlbar.style.removeProperty("left");
+      }
+    }).observe(urlbar, { attributeFilter: ["open"] });
+    window.addEventListener("resize", () => {
+      if (urlbar.hasAttribute("open")) {
+        this._centerUrlbar();
+      }
+    });
+  },
+
   init() {
     this._addSearchButton();
+    this._watchUrlbar();
     const splitter = document.getElementById("zen-sidebar-splitter");
     const toolbox = document.getElementById("navigator-toolbox");
     if (!splitter || !toolbox) {
