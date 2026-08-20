@@ -27,7 +27,14 @@ var gVectorSidebarSnap = {
     }
     const btn = document.createXULElement("toolbarbutton");
     btn.id = "vector-search-button";
-    btn.className = "toolbarbutton-1 chromeclass-toolbar-additional";
+    // NOT chromeclass-toolbar-additional: ZenUIManager's single-toolbar EXIT
+    // path sweeps every such child of this target into #nav-bar (which is
+    // hidden in icon mode) the moment the sidebar collapses. skipintoolbarset
+    // keeps CustomizableUI's hands off it too, like Zen's own separator.
+    btn.className = "toolbarbutton-1";
+    btn.setAttribute("skipintoolbarset", "true");
+    btn.setAttribute("removable", "false");
+    btn.setAttribute("overflows", "false");
     btn.setAttribute("tooltiptext", "Search or enter address");
     btn.addEventListener("command", () => {
       document.getElementById("Browser:OpenLocation")?.doCommand();
