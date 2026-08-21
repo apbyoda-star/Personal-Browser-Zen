@@ -111,6 +111,41 @@
 - name: vector.little-arc.enabled
   value: true
 
+# Popout (Little Arc) width as percent of the window; full height always.
+# User-adjustable in Settings → Look and Feel → "Popout width" (50–95).
+- name: vector.little-arc.width-percent
+  value: 85
+
+# Glance open/close animation: even at 150ms the fly-in from the click
+# point read as "slow jerky" on Windows. Owner decision 2026-08-20: no
+# entrance animation at all — the panel appears at its fixed 84% size
+# immediately. Duration 0 short-circuits the arc/scale sequence.
+- name: zen.glance.animation-duration
+  value: 0
+
+- name: zen.glance.deactivate-docshell-during-animation
+  value: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Windows taskbar jump list (owner decision 2026-08-20): keep Tasks plus a
+# short Frequent section capped at 5 so recent ROs stay one click away
+# without the duplicate clutter. Prefs are Windows-only; harmless elsewhere.
+# ─────────────────────────────────────────────────────────────────────────────
+- name: browser.taskbar.lists.enabled
+  value: true
+
+- name: browser.taskbar.lists.frequent.enabled
+  value: true
+
+- name: browser.taskbar.lists.recent.enabled
+  value: false
+
+- name: browser.taskbar.lists.tasks.enabled
+  value: true
+
+- name: browser.taskbar.lists.maxListItems
+  value: 5
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Update popup — the REAL kill switch (2026-08-20)
 # ─────────────────────────────────────────────────────────────────────────────

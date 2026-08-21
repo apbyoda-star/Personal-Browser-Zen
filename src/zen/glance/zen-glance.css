@@ -120,7 +120,11 @@
   & .browserContainer {
     position: fixed;
     flex: unset !important;
-    width: 80%;
+    /* Vector: fixed panel — 85% wide, FULL height (owner decision
+       2026-08-20) — no resizing, no adaptive origin-based sizing. Keep in
+       sync with widthPercent/heightPercent in ZenGlanceManager.mjs
+       #createGlanceArcSequence. */
+    width: 85%;
     height: 100%;
 
     &:not([has-finished-animation="true"]) {

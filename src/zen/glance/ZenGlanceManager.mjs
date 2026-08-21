@@ -268,79 +268,28 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     this.contentWrapper = browser.closest(".browserStack");
   }
 
-  // ── Vector: Little Arc symmetric resize + per-hostname width memory ──────
-  // Ported behaviour from Vector (MiniWindow.tsx / main/index.ts): dragging
-  // either edge grows both sides (the panel stays centered), width is clamped
-  // to [520px, 95vw], and the chosen width is remembered PER HOSTNAME (every
-  // RO/part page has its own URL, so a full-URL key would mean resizing the
-  // same site forever). Right-click a grip to save the current width as the
-  // default for all sites.
-  #vectorGrips = [];
+  // ── Vector: Little Arc fixed-size panel ──────────────────────────────────
+  // Owner decision 2026-08-20: NO resizing. The old symmetric-resize grips
+  // and per-hostname width memory are gone — the panel always opens at the
+  // fixed 85% size (zen-glance.css .browserContainer, kept in sync with
+  // #createGlanceArcSequence). Two behaviours survive from that port:
+  // centering on the DISPLAY rather than the content area, and a
+  // chrome-level Esc that closes the panel regardless of focus.
   #vectorEscListener = null;
-  // Destination host of the punch-out being opened, known BEFORE the page
-  // loads - the width lookup must not wait for currentURI to catch up.
-  #vectorPendingHost = null;
 
-  #vectorWidths() {
-    try {
-      return JSON.parse(
-        Services.prefs.getStringPref("vector.little-arc.widths", "{}")
-      );
-    } catch {
-      return {};
-    }
+  /** "Popout width" setting as a 0–1 fraction, clamped to sane bounds. */
+  get vectorWidthPercent() {
+    const pct = Services.prefs.getIntPref("vector.little-arc.width-percent", 85);
+    return Math.max(50, Math.min(95, pct)) / 100;
   }
 
-  #vectorHost() {
-    try {
-      const h = this.#currentBrowser?.currentURI?.host;
-      if (h) {
-        return h.toLowerCase();
-      }
-    } catch {}
-    return this.#vectorPendingHost || "*";
-  }
-
-  #vectorSaveWidth(px, asDefault = false) {
-    const widths = this.#vectorWidths();
-    widths[asDefault ? "*" : this.#vectorHost()] = Math.round(px);
-    Services.prefs.setStringPref(
-      "vector.little-arc.widths",
-      JSON.stringify(widths)
-    );
-  }
-
-  #vectorClampWidth(px) {
-    const max = Math.round(window.innerWidth * 0.95);
-    return Math.max(520, Math.min(px, max));
-  }
-
-  #vectorApplyStoredWidth(retry = 0) {
-    if (!this.browserWrapper || !this.#currentGlanceID) {
+  #vectorSetupPanel() {
+    if (!this.browserWrapper || this.#vectorEscListener) {
       return;
     }
-    const widths = this.#vectorWidths();
-    const host = this.#vectorHost();
-    const saved = widths[host] ?? widths["*"];
-    if (saved) {
-      this.browserWrapper.style.setProperty(
-        "width",
-        this.#vectorClampWidth(saved) + "px",
-        "important"
-      );
-    }
-    // A punch-out's URL is often still loading when the panel finishes
-    // opening, so the host reads as "*"; retry until the real host is known
-    // and its remembered width can land.
-    if (host === "*" && retry < 3) {
-      setTimeout(() => this.#vectorApplyStoredWidth(retry + 1), 700);
-    }
-  }
-
-  #vectorSetupResize() {
-    if (!this.browserWrapper || this.#vectorGrips.length) {
-      return;
-    }
+    // Apply the configured width before first paint so the CSS 85% fallback
+    // never flashes when the setting differs.
+    this.browserWrapper.style.width = this.vectorWidthPercent * 100 + "%";
     // Center the panel on the WINDOW, not the content area. The panel's
     // positioning context is the content container (right of the sidebar), so
     // "centered" skews toward the page side; shift by half the sidebar width
@@ -359,83 +308,6 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
         this.browserWrapper.style.translate = `${Math.round(shift)}px 0`;
       }
     } catch {}
-    this.#vectorApplyStoredWidth();
-    for (const side of ["left", "right"]) {
-      const grip = document.createElement("div");
-      grip.className = "vector-glance-grip";
-      grip.style.cssText = `
-        position: absolute; top: 0; bottom: 0; ${side}: 0;
-        width: 14px; cursor: ew-resize; z-index: 10;
-        display: flex; align-items: center; justify-content: center;`;
-      const pill = document.createElement("div");
-      // Solid grey, not light-dark(): this is an inline style on a floating
-      // panel and must be visible over any page background on both themes.
-      pill.style.cssText = `
-        width: 5px; height: 56px; border-radius: 999px;
-        background: rgba(127, 132, 145, 0.85);
-        box-shadow: 0 0 0 1px rgba(255,255,255,0.35), 0 1px 4px rgba(0,0,0,0.35);
-        opacity: 0; transition: opacity .15s ease, height .15s ease;`;
-      grip.appendChild(pill);
-      grip.addEventListener("mouseenter", () => {
-        pill.style.opacity = "1";
-        pill.style.height = "76px";
-      });
-      grip.addEventListener("mouseleave", () => {
-        pill.style.opacity = "0";
-        pill.style.height = "52px";
-      });
-      grip.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        grip.setPointerCapture(e.pointerId);
-        const startX = e.clientX;
-        const startW = this.browserWrapper.getBoundingClientRect().width;
-        const onMove = (ev) => {
-          const dx = ev.clientX - startX;
-          // Left grip dragged left widens; right grip dragged right widens.
-          const delta = side === "left" ? -dx : dx;
-          const w = this.#vectorClampWidth(startW + delta * 2);
-          this.browserWrapper.style.setProperty("width", w + "px", "important");
-        };
-        const onUp = () => {
-          grip.removeEventListener("pointermove", onMove);
-          grip.removeEventListener("pointerup", onUp);
-          this.#vectorSaveWidth(
-            this.browserWrapper.getBoundingClientRect().width
-          );
-        };
-        grip.addEventListener("pointermove", onMove);
-        grip.addEventListener("pointerup", onUp);
-      });
-      // Right-click OR double-click: adopt the current width as the default
-      // for every site (two-finger click on a trackpad also lands here).
-      const saveAsDefault = (e) => {
-        e.preventDefault();
-        this.#vectorSaveWidth(
-          this.browserWrapper.getBoundingClientRect().width,
-          true
-        );
-        // Confirm visually: the pill swells and glows Vector blue for a
-        // moment - a color change, not a blink (owner request).
-        pill.style.opacity = "1";
-        pill.style.background = "var(--zen-primary-color, #4250e6)";
-        pill.style.width = "7px";
-        pill.style.height = "96px";
-        pill.style.boxShadow =
-          "0 0 0 2px rgba(255,255,255,0.5), 0 0 14px 3px var(--zen-primary-color, #4250e6)";
-        setTimeout(() => {
-          pill.style.background = "rgba(127, 132, 145, 0.85)";
-          pill.style.width = "5px";
-          pill.style.height = "76px";
-          pill.style.boxShadow =
-            "0 0 0 1px rgba(255,255,255,0.35), 0 1px 4px rgba(0,0,0,0.35)";
-        }, 800);
-      };
-      grip.addEventListener("contextmenu", saveAsDefault);
-      grip.addEventListener("dblclick", saveAsDefault);
-      this.browserWrapper.appendChild(grip);
-      this.#vectorGrips.push(grip);
-    }
     // Chrome-level Esc: the content actor's Esc only fires while the PAGE has
     // focus (Vector had the identical bug). This works regardless of focus.
     this.#vectorEscListener = (e) => {
@@ -448,18 +320,12 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     window.addEventListener("keydown", this.#vectorEscListener, true);
   }
 
-  #vectorTeardownResize() {
-    for (const grip of this.#vectorGrips) {
-      grip.remove();
-    }
-    this.#vectorGrips = [];
+  #vectorTeardownPanel() {
     if (this.#vectorEscListener) {
       window.removeEventListener("keydown", this.#vectorEscListener, true);
       this.#vectorEscListener = null;
     }
-    this.browserWrapper?.style.removeProperty("width");
     this.browserWrapper?.style.removeProperty("translate");
-    this.#vectorPendingHost = null;
   }
 
   /**
@@ -495,7 +361,9 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
       {
         duration: 0.2,
         type: "spring",
-        delay: this.#GLANCE_ANIMATION_DURATION / 1000 - 0.2,
+        // Clamped: with Vector's zero-duration glance open this would go
+        // negative.
+        delay: Math.max(0, this.#GLANCE_ANIMATION_DURATION / 1000 - 0.2),
         bounce: 0,
       }
     );
@@ -612,13 +480,6 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
 
     this.fillOverlay(browserElement);
     this.overlay.classList.add("zen-glance-overlay");
-    // Vector: set the remembered width BEFORE the open animation measures its
-    // reference size, so the panel animates in at its final width instead of
-    // opening narrow and popping wider afterwards. The punch-out page is still
-    // about:blank at this instant, so the lookup keys by the destination host
-    // the window.open hook handed us.
-    this.#vectorPendingHost = data.vectorTargetHost || null;
-    this.#vectorApplyStoredWidth();
     // The panel frame paints ONE full-size frame in the async gap between
     // becoming deck-selected and the arc animation's first transform keyframe
     // (Zen's own FIXME notes the flashing). Hide the wrapper across that gap;
@@ -867,7 +728,11 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
       gBrowser.tabpanels
     );
 
-    const widthPercent = 0.8;
+    // Vector: fixed panel — width from the "Popout width" setting (percent
+    // of window, default 85), full height, centered. zen-glance.css carries
+    // the 85% fallback.
+    const widthPercent = this.vectorWidthPercent;
+    const heightPercent = 1;
     if (direction === "opening") {
       startPosition = {
         x: clientX + width / 2,
@@ -879,7 +744,7 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
         x: tabPanelsRect.width / 2,
         y: tabPanelsRect.height / 2,
         width: tabPanelsRect.width * widthPercent,
-        height: tabPanelsRect.height,
+        height: tabPanelsRect.height * heightPercent,
       };
     } else {
       // closing
@@ -887,7 +752,7 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
         x: tabPanelsRect.width / 2,
         y: tabPanelsRect.height / 2,
         width: tabPanelsRect.width * widthPercent,
-        height: tabPanelsRect.height,
+        height: tabPanelsRect.height * heightPercent,
       };
       endPosition = {
         x: Math.floor(clientX + width / 2),
@@ -898,10 +763,10 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     }
 
     // Reference size used as the scale(1, 1) baseline — this matches the
-    // wrapper's natural CSS size (80% x 100% of the tab panels) so the
+    // wrapper's natural CSS size (85% x 85% of the tab panels) so the
     // animation can run entirely on the compositor via transform.
     const refWidth = tabPanelsRect.width * widthPercent;
-    const refHeight = tabPanelsRect.height;
+    const refHeight = tabPanelsRect.height * heightPercent;
 
     // Calculate distance and arc parameters
     const distance = this.#calculateDistance(startPosition, endPosition);
@@ -1030,11 +895,10 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
     // Batch all style/attribute writes together to avoid interleaved
     // read/write layout thrashing.
     this.browserWrapper.style.height = "100%";
-    this.browserWrapper.style.width = "80%";
+    // Vector fixed panel size — width from the "Popout width" setting.
+    this.browserWrapper.style.width = this.vectorWidthPercent * 100 + "%";
+    this.browserWrapper.style.height = "100%";
     this.browserWrapper.style.opacity = "";
-    // Zen's 80% default lands after the animation and silently clobbers the
-    // remembered Vector width applied during setup - re-apply it last.
-    this.#vectorApplyStoredWidth();
     this.browserWrapper.removeAttribute("animate");
     this.browserWrapper.setAttribute("has-finished-animation", true);
     this.overlay.style.removeProperty("overflow");
@@ -1412,7 +1276,7 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
    * @param {Tab} lastCurrentTab - The tab being closed
    */
   #cleanupGlanceElements(lastCurrentTab) {
-    this.#vectorTeardownResize();
+    this.#vectorTeardownPanel();
     this.overlay.classList.remove("zen-glance-overlay");
     gBrowser
       ._getSwitcher()
@@ -1495,7 +1359,7 @@ class nsZenGlanceManager extends nsZenDOMOperatedFeature {
 
     this.overlay.classList.add("deck-selected");
     this.overlay.classList.add("zen-glance-overlay");
-    this.#vectorSetupResize();
+    this.#vectorSetupPanel();
   }
 
   /**
