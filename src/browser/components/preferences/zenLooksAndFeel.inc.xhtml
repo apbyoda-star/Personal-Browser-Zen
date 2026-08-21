@@ -17,6 +17,13 @@
   <button id="vectorOpenThemePicker" label="Theme colors…" class="accessory-button"/>
   <description class="description-deemphasized" style="margin-inline-start: 8px;">Colors apply per Space and recolor the whole window.</description>
 </hbox>
+<hbox id="vectorLittleArcWidthRow" align="center" style="margin-block: 8px;">
+  <label for="vectorLittleArcWidth">Popout width</label>
+  <html:input id="vectorLittleArcWidth" type="number" min="50" max="95" step="1"
+              style="width: 5em; margin-inline: 8px;"
+              preference="vector.little-arc.width-percent"/>
+  <description class="description-deemphasized">% of the window — floating popouts (Little Arc) always open at this width, full height.</description>
+</hbox>
 
   <label><html:h2 data-l10n-id="zen-vertical-tabs-layout-header"/></label>
     <description class="description-deemphasized" data-l10n-id="zen-vertical-tabs-layout-description" />

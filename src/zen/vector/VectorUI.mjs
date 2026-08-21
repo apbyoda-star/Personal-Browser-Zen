@@ -40,7 +40,28 @@ var gVectorSidebarSnap = {
     toolbox.prepend(box);
   },
 
+  _registerContentSheet() {
+    // Global content styles (Arc-clean number inputs, etc.). Agent-sheet
+    // registration is process-global and reaches every content process, but
+    // it is idempotent per URI, so guarding on a static avoids re-running
+    // per window.
+    if (gVectorSidebarSnap._contentSheetRegistered) {
+      return;
+    }
+    gVectorSidebarSnap._contentSheetRegistered = true;
+    const sss = Cc["@mozilla.org/content/style-sheet-service;1"].getService(
+      Ci.nsIStyleSheetService
+    );
+    const uri = Services.io.newURI(
+      "chrome://browser/content/zen-styles/vector-content.css"
+    );
+    if (!sss.sheetRegistered(uri, Ci.nsIStyleSheetService.AGENT_SHEET)) {
+      sss.loadAndRegisterSheet(uri, Ci.nsIStyleSheetService.AGENT_SHEET);
+    }
+  },
+
   init() {
+    this._registerContentSheet();
     this._addSearchButton();
     const splitter = document.getElementById("zen-sidebar-splitter");
     const toolbox = document.getElementById("navigator-toolbox");

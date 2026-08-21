@@ -258,10 +258,13 @@ window.gZenUIManager = {
   },
 
   updateTabsToolbar() {
-    const kUrlbarHeight = 333;
+    // Vector: center the floating search on the ACTUAL panel height (owner:
+    // "centered up both vertically and left to right"). Zen reserved a
+    // phantom 333px for future results, which parked the empty box well
+    // above center; now the box centers as-is and results grow downward.
     gURLBar.style.setProperty(
       "--zen-urlbar-top",
-      `${window.innerHeight / 2 - Math.max(kUrlbarHeight, window.windowUtils.getBoundsWithoutFlushing(gURLBar).height) / 2}px`
+      `${window.innerHeight / 2 - window.windowUtils.getBoundsWithoutFlushing(gURLBar).height / 2}px`
     );
     gURLBar.style.setProperty(
       "--zen-urlbar-width",

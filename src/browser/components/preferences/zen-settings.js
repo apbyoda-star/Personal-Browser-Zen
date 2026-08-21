@@ -1262,28 +1262,29 @@ Preferences.addSetting({
 // openThemePicker(event) which dereferences event.explicitOriginalTarget and
 // throws when no event exists. Call the picker directly with a real synthetic
 // event instead.
-function vectorWireThemeButton() {
-  const btn = document.getElementById("vectorOpenThemePicker");
-  if (!btn || btn.__vectorWired) {
+// Vector: Little Arc popout width (percent of window, 50–95).
+Preferences.add({
+  id: "vector.little-arc.width-percent",
+  type: "int",
+});
+
+// Delegated: Zen's settings sections render lazily, so a one-shot
+// getElementById at DOMContentLoaded can run before the button exists and
+// the click then dies silently. Document-level delegation is immune to
+// render timing.
+document.addEventListener("click", (event) => {
+  if (!event.target?.closest?.("#vectorOpenThemePicker")) {
     return;
   }
-  btn.__vectorWired = true;
-  btn.addEventListener("click", () => {
-    try {
-      const win = window.browsingContext.topChromeWindow;
-      const picker = win.gZenThemePicker;
-      if (picker) {
-        picker.openThemePicker(new win.MouseEvent("click"));
-      }
-    } catch (e) {
-      console.error("vectorOpenThemePicker:", e);
+  try {
+    const win = window.browsingContext.topChromeWindow;
+    const picker = win.gZenThemePicker;
+    if (!picker) {
+      console.error("vectorOpenThemePicker: no gZenThemePicker in top window");
+      return;
     }
-  });
-}
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", vectorWireThemeButton, {
-    once: true,
-  });
-} else {
-  vectorWireThemeButton();
-}
+    picker.openThemePicker(new win.MouseEvent("click"));
+  } catch (e) {
+    console.error("vectorOpenThemePicker:", e);
+  }
+});

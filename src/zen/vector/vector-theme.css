@@ -158,7 +158,74 @@
    but collapsed to nothing: the [open] urlbar is position:fixed and paints
    centered on its own. */
 :root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:not(:has(#urlbar[open])) {
-  display: none;
+  /* Icon mode: the whole wrapper becomes a fixed top-right pill, parked just
+     above the window edge. Hovering the exposed strip slides it in. It must
+     be an overlay (fixed + high z-index) — in normal flow Zen relocates the
+     URL bar up here whenever the sidebar collapses, which is the docked top
+     bar Vector must not show. */
+  position: fixed;
+  inset: 0 0 auto auto;
+  width: fit-content;
+  min-width: 0;
+  height: auto;
+  min-height: 0 !important;
+  z-index: 1000;
+  overflow: visible;
+  /* Fade, don't slide: a transform-parked pill moves pixels but not layout,
+     so Gecko kept reporting a stale maximize-button rect to Windows and the
+     Snap Layouts flyout popped up over the magnifier (top-left). With the
+     pill laid out at its real top-right spot and only opacity animating,
+     the OS hit-test region is always truthful. */
+  opacity: 0;
+  /* Retract lazily (300ms grace) so small cursor excursions don't yank the
+     pill away mid-reach; expansion below is immediate. */
+  transition: opacity 0.15s ease 0.3s;
+
+  /* Invisible hover halo: keeps :hover alive around the pill so it doesn't
+     flicker while the cursor travels toward the buttons. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -8px -8px -16px -32px;
+  }
+  border-radius: 0 0 var(--border-radius-medium, 10px) var(--border-radius-medium, 10px);
+  background: light-dark(rgba(255, 255, 255, 0.95), rgba(32, 34, 38, 0.95));
+  color: light-dark(rgb(21, 20, 26), rgb(251, 251, 254));
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+
+  /* While invisible, the buttons must not be clickable — an invisible close
+     button under a stray corner click would be a disaster. The halo alone
+     carries the hover. */
+  & .titlebar-buttonbox {
+    pointer-events: none;
+  }
+
+  &:hover,
+  &[zen-has-hover] {
+    opacity: 1;
+    transition-delay: 0s;
+
+    & .titlebar-buttonbox {
+      pointer-events: auto;
+    }
+  }
+
+  /* Old-Vector pill contents: window controls + extensions, nothing else.
+     The relocated nav-bar drags in back/forward, spacers, and indicators
+     that read as a long grey strip — hide all of it. Typing happens in the
+     magnifier overlay, so the urlbar stays hidden too. */
+  & #PersonalToolbar,
+  & #nav-bar > *:not(.titlebar-buttonbox-container):not(#unified-extensions-button) {
+    display: none;
+  }
+
+  /* Zen parks the collapsed-sidebar nav-bar with visibility:hidden, which
+     the children inherit. Visibility (unlike display) can be restored on a
+     descendant — the window controls are the pill, so they stay visible. */
+  & .titlebar-buttonbox-container,
+  & .titlebar-buttonbox {
+    visibility: visible;
+  }
 }
 :root:not([zen-sidebar-expanded="true"]) #zen-appcontent-navbar-wrapper:has(#urlbar[open]) {
   position: fixed;
@@ -178,6 +245,106 @@
   visibility: visible;
 }
 
+/* ── Vector: hover-reveal top bar is a compact pill, not a full-width bar ──
+   Old-Vector behaviour (MiniWindow control cluster). Verified live on
+   Windows (2026-08-20): with the single toolbar + hide-window-controls=true,
+   Zen marks #zen-appcontent-navbar-wrapper[should-hide=true] and
+   vertical-tabs-topbar.inc.css runs the collapse(8px/opacity0) ↔
+   reveal(34px, [zen-has-hover]) animation, full window width. The hover
+   trigger is the wrapper's own box (ZenCompactMode hoverableElements), so
+   shrinking the wrapper to fit-content at the top-right corner gives both
+   the pill look AND the "hover the top-right edge" trigger in one move.
+   Zen's height/opacity machinery is left untouched. */
+#zen-appcontent-navbar-wrapper[should-hide="true"] {
+  position: fixed;
+  inset: 0 0 auto auto; /* top-right */
+  width: fit-content;
+  min-width: 0;
+  z-index: 1000;
+  border-radius: 0 0 var(--border-radius-medium, 10px) var(--border-radius-medium, 10px);
+  background: light-dark(rgba(255, 255, 255, 0.95), rgba(32, 34, 38, 0.95));
+  color: light-dark(rgb(21, 20, 26), rgb(251, 251, 254));
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+
+  & #zen-appcontent-navbar-container {
+    width: fit-content;
+    padding-inline: 4px;
+  }
+
+  /* Same anti-flicker halo as the icon-mode pill: generous invisible hover
+     zone so the reveal doesn't retract while the cursor travels to it. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -8px -8px -16px -32px;
+  }
+
+  /* Fully CSS-deterministic reveal. Zen's [zen-has-hover] attribute is
+     driven by JS with hack delays and a re-flash after mouseleave, which
+     made the pill yo-yo ("slow and glitchy"). Both states are pinned with
+     !important (also outranking the unattributed sheet that pinned
+     "opacity:0; height:8px" even while hovered — verified live with
+     getMatchingCSSRules, 2026-08-20), so only the real cursor position
+     moves the pill: instant open, 250ms-grace close. */
+  height: var(--zen-element-separation, 8px) !important;
+  opacity: 0 !important;
+  transition: height 0.12s ease 0.25s, opacity 0.12s ease 0.25s;
+
+  &:hover,
+  &[has-popup-menu] {
+    transition-delay: 0s;
+    height: var(--zen-toolbar-height, 34px) !important;
+    opacity: 1 !important;
+    overflow: visible;
+  }
+}
+
+/* The fixed pill no longer occupies a layout row, so the web content lost
+   its 8px top breathing room (gap showed bottom/right but not top). Give
+   the content back a symmetric top margin while the pill mode is active. */
+:root[zen-sidebar-expanded="true"]
+  #zen-appcontent-wrapper:has(> #zen-appcontent-navbar-wrapper[should-hide="true"])
+  > #zen-tabbox-wrapper {
+  margin-top: var(--zen-element-separation, 8px);
+}
+
+/* ── Vector: no page-load status flicker ────────────────────────────────────
+   Firefox's bottom-left status panel ("Transferring data from…", "Waiting
+   for…") blinks through hostnames during every load. Owner: no need to show
+   that. Note this also removes the hovered-link URL preview, which lives in
+   the same element. */
+#statuspanel {
+  display: none !important;
+}
+
+/* ── Vector: sidebar URL bar must never overflow the sidebar ────────────────
+   The urlbar-container ships flex: 400 0 auto (shrink 0, basis auto). When
+   the stop/reload button (30px) appears during navigation it pushes the
+   container right, and with shrink 0 the container keeps its full preferred
+   width and hangs past the sidebar edge. Let it shrink; the urlbar's
+   breakout JS re-syncs its own width from the container on resize. */
+:root[zen-sidebar-expanded="true"] #urlbar-container {
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
+}
+
+/* ── Vector: neighboring spaces must not peek on hover ──────────────────────
+   All spaces' tab sections live stacked in the sidebar scrollbox; hovering
+   the spaces area let the adjacent space's name row ("Work ⌄") slide into
+   view as a dark box. Owner wants no hover reveal — the space switcher at
+   the bottom and right-click remain the ways to move between spaces. */
+.zen-workspace-tabs-section:not([active]) .zen-current-workspace-indicator {
+  visibility: hidden !important;
+}
+
+/* ── Vector: no hover-revealed workspace actions ────────────────────────────
+   Zen fades in a "..." actions button when hovering the space indicator.
+   Owner wants zero visual change on hover; everything in that menu stays
+   reachable from the right-click context menu on the space. */
+.zen-current-workspace-indicator .zen-workspaces-actions {
+  display: none !important;
+}
+
 /* Magnifier launcher: only in icon mode */
 :root[zen-sidebar-expanded="true"] #vector-collapsed-tools {
   display: none;
@@ -194,6 +361,22 @@
 }
 #vector-search-button {
   list-style-image: url("chrome://global/skin/icons/search-glass.svg");
+  /* Match the other sidebar buttons: 20px glyph, roomy hit target, no square
+     chrome-default border. */
+  appearance: none;
+  border: none;
+  border-radius: var(--border-radius-medium, 10px);
+  padding: 10px;
+
+  & .toolbarbutton-icon {
+    width: var(--icon-size-medium, 20px);
+    height: var(--icon-size-medium, 20px);
+    padding: 0;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+  }
 }
 
 /* ── Vector: never show a dead-empty URL pill ───────────────────────────────

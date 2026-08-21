@@ -1,0 +1,13 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* Vector content-wide styles, registered by VectorUI.mjs as an agent sheet.
+ *
+ * Arc-clean number inputs: Chromium shows <input type=number> spin buttons
+ * only while hovered/focused; Firefox shows them always, which reads as
+ * clutter (e.g. Tekmetric's Qty/Cost columns). Mirror Chromium: hidden at
+ * rest, native spinners return on hover or focus. */
+input[type="number"]:not(:hover):not(:focus) {
+  appearance: textfield !important;
+}
