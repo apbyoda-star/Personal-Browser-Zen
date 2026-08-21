@@ -29,9 +29,11 @@ Recorded 2026-08-19 and 2026-08-20. These override anything in the older documen
   opener and session (the Tekmetric → PartsTech punch-out), dismissible with no tab
   left behind, resizable, centered on the window.
 - **Custom password manager: delete.** The 43 saved logins migrate into **Firefox's
-  built-in password manager inside Vector** — explicitly *not* Bitwarden, though
-  Bitwarden stays installed as an extension. Migrate and verify against a copy
-  before deleting anything.
+  built-in password manager inside Vector** — explicitly *not* Bitwarden.
+  Migrate and verify against a copy before deleting anything.
+  *(Updated 2026-08-20, owner decision on Windows: Bitwarden is **not bundled**
+  by default — the auto-install from `distribution/extensions/` was dropped as
+  more trouble than it was worth. Install it manually from AMO if wanted.)*
 - **Cards/contacts vault: delete.** Native form autofill is sufficient.
 - **Sync: Firefox/Zen Sync**, retiring the old Supabase layer (export data first).
 - **No companion service, ever.** Anything the old helper process did must run from

@@ -58,8 +58,17 @@ if (!targets.length) {
   process.exit(1);
 }
 
+const EXT_SRC = "distribution/extensions";
+
 for (const dir of targets) {
   fs.mkdirSync(dir, { recursive: true });
   fs.copyFileSync(SRC, path.join(dir, "policies.json"));
   console.log(`policies.json -> ${dir}`);
+  // Owner decision 2026-08-20: no extensions are bundled by default (the
+  // Bitwarden auto-install was dropped). If distribution/extensions/ ever
+  // gains content again, it still ships; its absence is the normal state.
+  if (fs.existsSync(EXT_SRC)) {
+    fs.cpSync(EXT_SRC, path.join(dir, "extensions"), { recursive: true });
+    console.log(`extensions/ -> ${dir}`);
+  }
 }
