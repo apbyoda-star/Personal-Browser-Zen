@@ -355,7 +355,9 @@
   padding-block: 10px 4px;
 }
 /* Zen pushes the collapsed sidebar down 42px to clear the top toolbar;
-   we removed that toolbar in icon mode, so reclaim the space. */
+   we removed that toolbar in icon mode, so reclaim the space.
+   On Windows the caption buttons move into the hover-reveal pill below, so
+   this holds there too. */
 :root:not([zen-sidebar-expanded="true"]) #navigator-toolbox#navigator-toolbox#navigator-toolbox {
   margin-top: 0 !important;
 }
@@ -387,3 +389,9 @@
   opacity: 0.45;
   font-size: 12px;
 }
+
+/* NOTE (merge 2026-08-21): the Mac side independently ported a JS-driven
+   window-control pill here ([vector-winctl] + VectorUI.mjs, commit
+   87d67d936). Superseded by the CSS-driven pill above (the
+   #zen-appcontent-navbar-wrapper rules), which was built and verified live
+   on Windows with the owner. Their implementation remains in git history. */

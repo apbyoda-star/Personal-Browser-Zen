@@ -141,10 +141,14 @@ if it is not present) has the fuller checklist; these are the essentials:
 
 1. **Branding** — the window, taskbar, and Start menu all say **Vector** with
    Vector's V icon. No Zen name, spiral logo, fox mascot, or flame icon anywhere.
-2. **Window controls** — Windows uses its own minimize/maximize/close buttons.
-   The pref `zen.view.hide-window-controls` is deliberately **false** on Windows
-   (true on macOS). If the controls are missing, that pref regressed and the user
-   would have no way to close the window.
+2. **Window controls — the hover pill** (Windows-verified 2026-08-20).
+   `zen.view.hide-window-controls` is **true**: min/max/close live in a
+   compact pill that fades in at the **top-right corner** on hover, in BOTH
+   sidebar modes. Pure CSS (`#zen-appcontent-navbar-wrapper` rules in
+   vector-theme.css) — the Mac side's JS port of the same idea
+   ([vector-winctl], commit 87d67d936) was superseded by this and lives only
+   in git history. Escape hatches if the pill ever regresses: Alt+F4,
+   Alt+Space.
 3. **Fonts** — Windows should render in Segoe UI, not Inter. Driven by a
    `-moz-platform: windows` media query in `src/zen/vector/vector-theme.css`.
 4. **Little Arc (the flagship feature)** — a page-initiated `window.open` must
@@ -152,9 +156,11 @@ if it is not present) has the fuller checklist; these are the essentials:
    is Tekmetric → PartsTech**: open a repair order, punch out to parts, confirm
    the panel carries the login through, that adding parts returns the cart data
    to the estimate, and that dismissing the panel leaves no tab behind.
-   Panel width is remembered per site; drag either edge to resize, and
-   double-click or right-click an edge grip to save the current width as the
-   default for all sites.
+   The panel opens INSTANTLY at a fixed size — width from the Settings →
+   Look and Feel "Popout width" control (default 85%), full height,
+   centered on the display. There is deliberately NO resizing and NO
+   per-site width memory (owner decision 2026-08-20; the old grips port
+   was removed). Esc closes it.
 5. **Sidebar drag** — dragging the sidebar narrow collapses it to icons;
    dragging back out expands it. In icon mode there is no top URL bar at all;
    a magnifier icon at the top of the icon strip opens a centered floating
