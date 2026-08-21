@@ -232,13 +232,15 @@ class nsZenWindowSync {
       hasUnsyncedArg = true;
     }
     delete aWindow._zenStartupSyncFlag;
+    // Vector: windows are ONLY unsynced when explicitly requested (the
+    // "New Unsynced Window" menu item / shortcut, i.e. hasUnsyncedArg).
+    // Zen's extra heuristic — any window opened with a URL argument while
+    // other windows exist (second exe launch, external link, jump list) —
+    // silently produced lone windows with a single unlinked space, which
+    // the owner reported as "two instances that aren't linked at all".
     if (
       !forcedSync &&
-      (hasUnsyncedArg ||
-        !aWindow.gZenWorkspaces.shouldHaveWorkspaces ||
-        (typeof aWindow.arguments?.[0] === "string" &&
-          aWindow.arguments.length > 1 &&
-          !!this.#browserWindowsList.length))
+      (hasUnsyncedArg || !aWindow.gZenWorkspaces.shouldHaveWorkspaces)
     ) {
       this.log(
         "Not syncing new window due to unsynced argument or existing synced windows"
