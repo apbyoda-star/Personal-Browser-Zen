@@ -111,6 +111,14 @@
 - name: vector.little-arc.enabled
   value: true
 
+# Zen's first-run welcome wizard must NEVER show in Vector (it is
+# Zen-branded and unwanted). Zen's own welcome.yaml only suppresses it for
+# non-MOZILLA_OFFICIAL builds, which is why it first appeared in the
+# optimized (ZEN_RELEASE) build on 2026-08-21.
+- name: zen.welcome-screen.seen
+  value: true
+  sticky: true
+
 # Popout (Little Arc) width as percent of the window; full height always.
 # User-adjustable in Settings → Look and Feel → "Popout width" (50–95).
 - name: vector.little-arc.width-percent
