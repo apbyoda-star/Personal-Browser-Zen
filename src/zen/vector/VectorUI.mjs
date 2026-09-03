@@ -60,7 +60,49 @@ var gVectorSidebarSnap = {
     }
   },
 
+  // Floating search: one measure-and-correct pass per open. The theme's
+  // margins skew the rendered box ~12px from the centre line the
+  // --vector-urlbar-left variable requests (icon mode only; the docked pill
+  // geometry differs). Measure where it actually landed and close the gap -
+  // never hard-code the offset, it differs per platform/theme state.
+  _watchUrlbarCentering() {
+    const urlbar = document.getElementById("urlbar");
+    if (!urlbar) {
+      requestAnimationFrame(() => this._watchUrlbarCentering());
+      return;
+    }
+    new MutationObserver(() => {
+      if (!urlbar.hasAttribute("open")) {
+        return;
+      }
+      requestAnimationFrame(() => {
+        const panels = gBrowser?.tabpanels;
+        if (!panels || !urlbar.hasAttribute("open")) {
+          return;
+        }
+        const area = panels.getBoundingClientRect();
+        if (!area.width) {
+          return;
+        }
+        const target = area.x + area.width / 2;
+        const r = urlbar.getBoundingClientRect();
+        const dx = target - (r.x + r.width / 2);
+        if (Math.abs(dx) < 2) {
+          return;
+        }
+        const cur =
+          parseFloat(urlbar.style.getPropertyValue("--vector-urlbar-left")) ||
+          target;
+        urlbar.style.setProperty(
+          "--vector-urlbar-left",
+          Math.round(cur + dx) + "px"
+        );
+      });
+    }).observe(urlbar, { attributeFilter: ["open"] });
+  },
+
   init() {
+    this._watchUrlbarCentering();
     this._registerContentSheet();
     this._addSearchButton();
     const splitter = document.getElementById("zen-sidebar-splitter");

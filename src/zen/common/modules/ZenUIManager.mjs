@@ -270,6 +270,20 @@ window.gZenUIManager = {
       "--zen-urlbar-width",
       `${Math.min(window.innerWidth / 1.5, 750)}px`
     );
+    // Vector: horizontal centre on the PAGE AREA, not the window (owner:
+    // "it should sit in the center of the google instance not the center of
+    // the screen") - the sidebar makes those differ by half its width.
+    // Falls back to the stylesheet's 50% when the rect is not ready.
+    const vectorPanels = window.gBrowser?.tabpanels;
+    if (vectorPanels) {
+      const pr = window.windowUtils.getBoundsWithoutFlushing(vectorPanels);
+      if (pr.width > 0) {
+        gURLBar.style.setProperty(
+          "--vector-urlbar-left",
+          `${Math.round(pr.x + pr.width / 2)}px`
+        );
+      }
+    }
     gZenVerticalTabsManager.actualWindowButtons.removeAttribute(
       "zen-has-hover"
     );

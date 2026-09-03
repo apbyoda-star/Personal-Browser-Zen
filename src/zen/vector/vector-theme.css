@@ -395,3 +395,14 @@
    87d67d936). Superseded by the CSS-driven pill above (the
    #zen-appcontent-navbar-wrapper rules), which was built and verified live
    on Windows with the owner. Their implementation remains in git history. */
+
+/* ── Floating search: horizontal centre on the page area ──────────────────
+   Companion to the vertical fix in ZenUIManager.updateTabsToolbar. Zen's
+   own rule pins left: 50% of the window; the sidebar shifts the page's true
+   centre right by half the sidebar width. The variable is set from the
+   tabpanels rect; the doubled id out-specifies zen-omnibox.css regardless of
+   load order. The theme's translate: -50% keeps applying, so `left` is the
+   centre line. */
+#urlbar#urlbar[open][zen-floating-urlbar="true"] {
+  left: var(--vector-urlbar-left, 50%) !important;
+}
